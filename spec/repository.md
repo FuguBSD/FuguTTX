@@ -1,19 +1,23 @@
 # Repository
 
-This is a Python + Perl + HCL monorepo. uv workspaces manage the Python packages: one lockfile, a shared virtualenv, and per-package `uv sync`. `just` is the polyglot task runner for all of it.
+This is a Python + Perl + HCL monorepo.
+uv workspaces manage the Python packages: one lockfile, a shared virtualenv, and
+per-package `uv sync`. `just` is the polyglot task runner for all of it.
 
 ## Tools
 
-One language per concern. The boundary is where the code runs.
+One language per concern.
+The boundary is where the code runs.
 
 | Concern | Tool | Reason |
-|---|---|---|
+| --- | --- | --- |
 | Model-side work (data, synthesis, training, evaluation, quantization) | Python 3.12, uv workspace, one lockfile | The ML ecosystem is Python. uv gives one lockfile and per-package installation, with no environment drift. |
 | Training framework | Axolotl (QLoRA), YAML configurations in git | One framework covers CPT and SFT. Version-controlled YAML makes each run reproducible. |
 | GPU runtime | Upstream Docker images (Axolotl for training, vLLM for the teacher) on the Scaleway GPU OS image | No custom environments on ephemeral instances. The uv workspace runs on the operator machine and in CI, not on the GPU. |
 | Harness | Perl 5 from OpenBSD base, base modules only | Perl, `OpenBSD::Pledge(3p)`, and `OpenBSD::Unveil(3p)` ship in base. The OpenBSD package tools follow the same discipline. |
 | Infrastructure as code | OpenTofu, with the Scaleway provider | Open-source IaC agrees with the project license ethos. It makes the ephemeral GPU lifecycle safe and repeatable. |
 | Task runner | `just` | One polyglot entry point for Python, Perl, and OpenTofu. |
+| Format and lint | Ruff for Python, flowmark for Markdown | One formatter per language. flowmark makes semantic line breaks: one sentence per line. This agrees with the ASD-STE100 writing standard and keeps diffs small. |
 | Inference runtime | llama.cpp everywhere | The same runtime serves development (Metal on Apple Silicon) and production (OpenBSD CPU). What is validated is what ships. |
 | Teacher/judge model | Qwen3-32B (Apache 2.0), served by vLLM on the H100 | Clean license provenance for synthetic data. One deployment generates traces and grades evaluations. |
 | CI | GitHub Actions | The repository and the corpus mirrors are on GitHub. CI is lint, test, and validation only, with no cloud credentials. |
@@ -53,15 +57,19 @@ fuguttx/
 
 ## Task recipes
 
-`just data`, `just synth`, `just train cpt`, `just train sft`, `just eval`, `just quant`, `just infra-up train`, `just infra-down train`, `just harness-test`.
+`just data`, `just synth`, `just train cpt`, `just train sft`, `just eval`,
+`just quant`, `just infra-up train`, `just infra-down train`, `just harness-test`.
 
-The top-level `just check` runs each local lint, test, and validation step. It must pass before each commit. CI runs the same gate.
+The top-level `just check` runs each local lint, test, and validation step.
+It must pass before each commit.
+CI runs the same gate.
 
 ## CI
 
 GitHub Actions, with no cloud credentials:
 
 - Python packages: ruff and pytest.
+- Markdown documents: `flowmark --check`.
 - Harness: `perl -c`, `prove`, and the no-CPAN-dependency check.
 - Infrastructure: `tofu fmt -check` and `tofu validate`.
 - Training: Axolotl configuration validation.
