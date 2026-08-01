@@ -56,6 +56,20 @@ for the CPU and for the GPU, because the two engines share one memory system.
 Do not use the 68.25 GB/s specification figure as a ceiling, because no engine reaches
 it.
 
+The machine sets the ceiling.
+OpenBSD lists three Mac mini models: M1 (2020), M2 (2023), and M2 Pro (2023). The same
+STREAM study measures the M2 CPU at 78 GB/s, which is 32 percent above the M1. The M2
+Pro has a specification peak of 200 GB/s, and no measured figure exists for it.
+
+| Chip | Measured CPU | Ceiling for a 2.5 GB Q4_K_M file |
+| --- | --- | --- |
+| M1 | 59 GB/s | 23.6 tokens/s |
+| M2 | 78 GB/s | 31.2 tokens/s |
+| M2 Pro | not measured | approximately 68 tokens/s, extrapolated |
+
+A change of target machine therefore gains more than a GPU can, and it needs no new
+code.
+
 ### aarch64 build defect
 
 The OpenBSD aarch64 package of `devel/libggml` is not tuned for the target CPU. The port
@@ -107,10 +121,11 @@ August 2026. Four facts control the result.
 - The one Apple GPU driver that exists anywhere is Rust code in a branch that Asahi
   Linux rebases. The OpenBSD kernel has no Rust, and mainline Linux has no `drm/asahi`.
 - No OpenBSD developer shows public work on an Apple GPU driver.
-- Token generation would gain nothing from the Apple GPU, because the CPU and the GPU
-  share the same memory bandwidth.
-  Prompt processing would gain, but the cheaper gain on that axis is the aarch64 build
-  fix above.
+- Token generation would gain nothing on an M1, because the CPU and the GPU measure the
+  same memory bandwidth.
+  On an M2 the gain would be about 17 percent.
+  Prompt processing would gain more, but the cheaper gain on that axis is the aarch64
+  build fix above.
 
 OpenBSD does support GPU offload on amd64 with an AMD card, through the ggml Vulkan back
 end. D2 is therefore “CPU only on the target hardware”.

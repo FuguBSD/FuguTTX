@@ -429,8 +429,9 @@ this check used mail-archive.com and patchwork.kernel.org instead.
 ## 6. The possible gain
 
 The gain splits by axis.
-Token generation gains nothing.
-Prompt processing can gain a lot, and a cheaper CPU change gains on the same axis.
+Token generation gains nothing on the M1. Prompt processing can gain a lot, and a
+cheaper CPU change gains on the same axis.
+A change of target machine gains more than a GPU, on both axes.
 
 ### The bandwidth arithmetic, corrected
 
@@ -464,6 +465,56 @@ For a 2.5 GB Qwen3-4B Q4_K_M file:
 These figures are arithmetic, not measurement.
 They ignore KV-cache reads, which grow with context and lower the real number.
 On the 8 GB model, the KV cache for long agent contexts is a further constraint.
+
+### The M1 is the slowest supported machine
+
+The same STREAM study measures all four base M-series chips.
+The limits below use the same 2.5 GB Qwen3-4B Q4_K_M file.
+
+| Chip | Specification peak | Measured CPU | Measured GPU | CPU limit | GPU limit |
+| --- | --- | --- | --- | --- | --- |
+| M1 | 68.25 GB/s | 59 GB/s | 60 GB/s | 23.6 tokens/s | 24.0 tokens/s |
+| M2 | 100 GB/s | 78 GB/s | 91 GB/s | 31.2 tokens/s | 36.4 tokens/s |
+| M3 | 102.4 GB/s | 92 GB/s | 92 GB/s | 36.8 tokens/s | 36.8 tokens/s |
+| M4 | 120 GB/s | 103 GB/s | 100 GB/s | 41.2 tokens/s | 40.0 tokens/s |
+
+The M2 and the M3 have the same memory: 128-bit LPDDR5-6400. Apple states 100 GB/s for
+the M2, and the arithmetic gives 102.4 GB/s. The study treats the two peaks as equal.
+
+The M2 CPU gives 32 percent more bandwidth than the M1 CPU. The M2 GPU gives 52 percent
+more than the M1 GPU.
+
+One difference changes the GPU argument by a small amount.
+On the M1 the CPU and the GPU measure the same, so a GPU adds nothing to token
+generation. On the M2 a gap of about 17 percent exists between the CPU and the GPU. The
+study calls this an M2 CPU anomaly.
+The Copy and Scale kernels fall 20 to 30 GB/s behind the other kernels, which is about
+13 percent. The authors write: “It is unclear why the M2’s CPU performed worse than
+anticipated.” A GPU on an M2 would therefore buy about 17 percent on token generation,
+against zero on an M1. This does not change the verdict.
+
+### A different machine buys more than a GPU
+
+The OpenBSD arm64 page lists three Mac mini models, and not one: Mac mini (M1, 2020),
+Mac mini (M2, 2023), and Mac mini (M2 Pro, 2023).
+
+The M2 Pro has a specification peak of 200 GB/s, which is about three times the M1. The
+study measured base chips only, so no measured figure exists for the M2 Pro.
+The 85 percent rule of the study extrapolates to about 170 GB/s. That gives a
+token-generation limit near 68 tokens/s. Treat this as an estimate, and not as a
+measurement.
+
+This gives the cheapest result in the whole report.
+A change of target machine multiplies token generation by about 1.3 (M2) or about 2.9
+(M2 Pro). It needs no new kernel driver, no new user-space driver, and no new ggml back
+end. An operator can buy the result today.
+A GPU path cannot deliver a comparable gain, because token generation on any of these
+machines is bandwidth-bound.
+
+Two conditions apply.
+FuguTTX must confirm that OpenBSD runs on the chosen machine before it buys one.
+FuguTTX must measure the machine with `llama-bench`, because these limits are
+arithmetic.
 
 ### The OpenBSD aarch64 CPU build is not tuned
 
@@ -605,10 +656,11 @@ on an M2 Max. A ratio taken from a macOS CPU baseline must not be applied to Ope
 
 | Axis | Effect of a working OpenBSD GPU path | Confidence |
 | --- | --- | --- |
-| Token generation | No gain. The CPU and the GPU share 59 to 60 GB/s. Both land near 23.6 tokens/s at best for a 2.5 GB model. | High |
+| Token generation | No gain on the M1. The CPU and the GPU share 59 to 60 GB/s. Both land near 23.6 tokens/s at best for a 2.5 GB model. About 17 percent on an M2. | High |
 | Prompt processing | A real gain. An estimated 55 to 65 tokens/s against an untuned OpenBSD CPU build with no dot product and no BLAS. | Low, estimate only |
 | Cost | A kernel driver that does not exist in C, plus Mesa build work, plus a Mesa version bump in base. | High |
-| Cheaper alternative on the same axis | One build-flag change in `devel/libggml`, plus a `llama-bench` measurement. | High |
+| Cheaper alternative, same axis | One build-flag change in `devel/libggml`, plus a `llama-bench` measurement. | High |
+| Cheaper alternative, both axes | A Mac mini M2 or M2 Pro. OpenBSD lists both. No new driver is necessary. | High for the machine list, low for the M2 Pro figure |
 
 An estimate of the current OpenBSD CPU rate is 9 to 15 tokens/s as the port ships, and
 15 to 20 tokens/s after a rebuild with dot product and fp16. That estimate is a
@@ -632,6 +684,14 @@ loads.
   https://everymac.com/systems/apple/mac_mini/specs/mac-mini-m1-8-core-2020-specs.html
 - Wikipedia, Apple M1 (68.25 GB/s, LPDDR4X, Firestorm and Icestorm), read 1 Aug 2026 —
   https://en.wikipedia.org/wiki/Apple_M1
+- Wikipedia, Apple M2 (100 GB/s, 128-bit LPDDR5-6400; M2 Pro about 200 GB/s), read 1 Aug
+  2026 — https://en.wikipedia.org/wiki/Apple_M2
+- Wikipedia, Apple M3 (102.4 GB/s, 128-bit LPDDR5-6400), read 1 Aug 2026 —
+  https://en.wikipedia.org/wiki/Apple_M3
+- Wikipedia, Apple M4 (120 GB/s, LPDDR5X), read 1 Aug 2026 —
+  https://en.wikipedia.org/wiki/Apple_M4
+- OpenBSD arm64 platform page (three Mac mini models: M1 2020, M2 2023, M2 Pro 2023),
+  read 1 Aug 2026 — https://www.openbsd.org/arm64.html
 - `devel/libggml/Makefile`, rev 1.23, 20 Jul 2026 —
   https://cvsweb.openbsd.org/ports/devel/libggml/Makefile
 - ggml v0.17.0 `src/ggml-cpu/CMakeLists.txt` —
@@ -728,45 +788,56 @@ The advantage is that a PCIe slot accepts a Radeon.
 ## 8. What to check next
 
 Each item below is a check that a reader can run.
-Items 1 and 2 are the two cheap checks that answer the open questions in this report.
-Items 3 to 5 must all pass before GPU work becomes possible.
+Items 1 to 3 are the cheap checks that answer the open questions in this report.
+Items 4 to 6 must all pass before GPU work becomes possible.
 
 1. Run `llama-bench -m qwen3-4b-q4_k_m.gguf -t 4 -p 512 -n 128` on a Mac mini M1 under
    OpenBSD, with `sysctl hw.blockcpu=EL`. Publish pp512, tg128, and the build number.
    This replaces the estimate of 9 to 15 tokens/s with a fact.
 2. Rebuild `devel/libggml` with `-DGGML_CPU_ARM_ARCH=armv8.4-a+dotprod+fp16` and repeat
    check 1. The difference measures the cost of the missing dot-product instructions.
-3. Check whether an OpenBSD `src` commit adds an Apple GPU driver.
+3. Repeat check 1 on a Mac mini M2, and on a Mac mini M2 Pro.
+   OpenBSD lists both machines.
+   The measured bandwidth of the M2 is 32 percent above the M1, and the specification
+   peak of the M2 Pro is about three times the M1. This check costs one machine and no
+   engineering.
+4. Check whether an OpenBSD `src` commit adds an Apple GPU driver.
    Check whether a Mac mini dmesg stops printing `"gpu" at simplebus0 not configured`.
    This check does not depend on mainline Linux, because OpenBSD imports out-of-tree
    Apple DRM code already.
-4. Check whether xenocara gains `lib/mesa/mk/libvulkan_asahi`, or whether
+5. Check whether xenocara gains `lib/mesa/mk/libvulkan_asahi`, or whether
    `lib/mesa/mk/config.mk` gains an Apple Vulkan switch.
-5. Run `vulkaninfo` on a Mac mini M1 under OpenBSD and check whether it enumerates a
+6. Run `vulkaninfo` on a Mac mini M1 under OpenBSD and check whether it enumerates a
    device. Run `llama-bench --list-devices` for the same check on the ggml side.
    One command then converts the whole question from inference to observation.
-6. Check whether OpenBSD adds `drm_gem_shmem_helper.c`. Check whether the `STUB()`
+7. Check whether OpenBSD adds `drm_gem_shmem_helper.c`. Check whether the `STUB()`
    bodies leave `drm_syncobj_get_fd()` and `drm_syncobj_fd_to_handle()`.
-7. Check whether xenocara updates Mesa past 25.0.7, so that the Apple user space targets
+8. Check whether xenocara updates Mesa past 25.0.7, so that the Apple user space targets
    the stable `asahi_drm.h` UAPI.
-8. Check whether the llama.cpp Vulkan scoreboard gains a 2026 base-M1 Honeykrisp row.
+9. Check whether the llama.cpp Vulkan scoreboard gains a 2026 base-M1 Honeykrisp row.
    The current row dates from 21 November 2025 and predates two optimizations.
-9. Check whether Mesa Honeykrisp advertises `VK_KHR_cooperative_matrix`, or advertises
-   `integerDotProduct4x8BitPackedSignedAccelerated`. Either one opens an accelerated
-   llama.cpp matmul path for Apple GPUs.
-10. Check whether Asahi posts the full `drm/asahi` driver series to dri-devel.
+10. Check whether Mesa Honeykrisp advertises `VK_KHR_cooperative_matrix`, or advertises
+    `integerDotProduct4x8BitPackedSignedAccelerated`. Either one opens an accelerated
+    llama.cpp matmul path for Apple GPUs.
+11. Check whether Asahi posts the full `drm/asahi` driver series to dri-devel.
     Only IGT test patches and generic Rust DRM work appeared up to 7 July 2026.
-11. Check whether the OpenBSD `sysutils/m1n1` port moves to 1.6.x. That release needs
+12. Check whether the OpenBSD `sysutils/m1n1` port moves to 1.6.x. That release needs
     Rust for the stage 2 build.
-12. Check whether OpenBSD gains a virtio-gpu DRM driver.
+13. Check whether OpenBSD gains a virtio-gpu DRM driver.
     That driver would open the API-remoting route.
-13. Check whether an OpenBSD developer states a plan, or a refusal, for an Apple GPU
+14. Check whether an OpenBSD developer states a plan, or a refusal, for an Apple GPU
     driver in public. No such statement exists today.
 
 ## 9. What this means for the specification
 
-Four changes are proposed.
+Five changes are proposed.
 The change to `spec/decisions.md` needs human approval.
+
+**The specification must not treat the M1 as the only target.** OpenBSD lists three Mac
+mini models: M1 (2020), M2 (2023), and M2 Pro (2023). The M2 gives 32 percent more
+measured CPU bandwidth than the M1. Token generation is bandwidth-bound, so the machine
+sets the ceiling. A change of machine gains more than a GPU can, and it needs no new
+code. `spec/inference.md` must record the M-series bandwidth table and the machine list.
 
 **D2 must stand, and its reason must change.** The decision “Inference: the
 `misc/llama.cpp` port, CPU only” is correct.
@@ -1028,6 +1099,9 @@ Dates are the source dates, not the fetch dates.
 - EveryMac, Mac mini M1 8-core specification —
   https://everymac.com/systems/apple/mac_mini/specs/mac-mini-m1-8-core-2020-specs.html
 - Wikipedia, Apple M1 — https://en.wikipedia.org/wiki/Apple_M1
+- Wikipedia, Apple M2 — https://en.wikipedia.org/wiki/Apple_M2
+- Wikipedia, Apple M3 — https://en.wikipedia.org/wiki/Apple_M3
+- Wikipedia, Apple M4 — https://en.wikipedia.org/wiki/Apple_M4
 - Apple developer forum, eGPU on Apple Silicon, June 2020 – November 2022 —
   https://developer.apple.com/forums/thread/650268
 - NetBSD evbarm Apple wiki, last edited 7 May 2022 —
