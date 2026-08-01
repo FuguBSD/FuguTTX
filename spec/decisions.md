@@ -15,10 +15,21 @@ are excluded. Details: [base model](model.md).
 
 ## D2 — Inference: the `misc/llama.cpp` port, CPU only
 
-OpenBSD has no CUDA and no ROCm.
-Thus inference is CPU only.
+The target hardware has no usable GPU path.
+OpenBSD/arm64 has no kernel driver for the Apple GPU, and no Apple Vulkan ICD. The one
+Apple GPU driver that exists anywhere is Rust code in a branch that Asahi Linux rebases,
+and the OpenBSD kernel has no Rust.
+Token generation would also gain nothing from the GPU of a Mac mini M1, because the CPU
+and the GPU share the same measured 59 to 60 GB/s of memory bandwidth.
+
+This decision is “CPU only on the target hardware”.
+It is not “OpenBSD has no GPU path”.
+OpenBSD supports GPU offload on amd64 with an AMD card, through the ggml Vulkan back
+end. A move to GPU inference is an escalation, and it needs a new decision.
+
 The port is maintained and builds on twelve architectures.
-A 4B model at Q4_K_M operates well in 16 GB RAM. Details: [inference](inference.md).
+A 4B model at Q4_K_M operates well in 16 GB RAM. Details: [inference](inference.md), and
+[OpenBSD and the Apple GPU](../docs/research/openbsd-apple-silicon-gpu.md).
 
 ## D3 — Training: Axolotl QLoRA on a Scaleway H100, fully as code
 
