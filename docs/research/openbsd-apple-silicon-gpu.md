@@ -3,6 +3,10 @@
 **Date: 1 August 2026. Status: research report.
 This report changes no code.**
 
+A companion document describes what the work would look like, if anybody did it:
+[Draft plan: Apple GPU support for OpenBSD on the Mac mini](apple-gpu-openbsd-draft-plan.md).
+That plan is a draft, and it is not part of the specification.
+
 ## 1. Verdict
 
 No. The first necessary condition is many years away.
