@@ -86,6 +86,8 @@ Four decisions stay human:
 1. **Merges.** Agents open pull requests.
    A human reviews and merges.
    A green `just check` is necessary, never sufficient.
+   A human can delegate the mechanical merge of one reviewed branch with the `/ship-it`
+   skill. The invocation is the approval.
 2. **Releases.** Signatures (signify) and publication of weights, datasets, and the
    harness port.
 3. **Spend** above the documented per-campaign budget.
