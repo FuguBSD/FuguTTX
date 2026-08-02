@@ -2,7 +2,7 @@
 
 OpenTofu, with the Scaleway provider, declares each Scaleway resource.
 Do not make resources in the console.
-Six exceptions exist.
+Seven exceptions exist.
 “Resources outside OpenTofu” lists them.
 Scaleway bills a GPU instance per minute of uptime.
 Scaleway also documents a minimum of 60 minutes for each created resource.
@@ -105,6 +105,14 @@ The agentic evaluation suite needs qemu with KVM for the OpenBSD guests.
 Scaleway documents nested virtualization nowhere, so a virtual instance is not a
 supported foundation for that suite.
 An Elastic Metal server carries no hypervisor, so KVM needs no extra setting.
+
+One test can change the host type ([decisions](decisions.md), D9). Before the first
+`infra/dev` apply, run one virtual instance for one hour: check `/dev/kvm`, and boot one
+OpenBSD guest under qemu.
+A matched virtual instance costs less than the metal offer: `GP1-M`, with 16 vCPU and 64
+GiB, was EUR 279.97 per month, read 2026-06-23, against EUR 400.04. If both checks pass,
+the virtual instance becomes the development host.
+Record the result in the bootstrap runbook.
 
 Native CPU speed on this host is a convenience, not a requirement.
 A published performance number comes only from the target hardware
@@ -288,9 +296,11 @@ per hour of allocated size.
 The stack must not use `scaleway_flexible_ip`. That resource works with an Elastic Metal
 server only.
 
-Cloud-init pulls the Axolotl and vLLM images, installs the S3 client, and synchronizes
-the corpus from Object Storage to scratch NVMe.
-The cloud-init must not run a distribution upgrade.
+Cloud-init pulls the Axolotl and vLLM images and installs the S3 client.
+Cloud-init must not receive a credential, because `user_data` is readable through the
+instance API. CI delivers the train credential over SSH after boot, and the first SSH
+step synchronizes the corpus from Object Storage to scratch NVMe
+([credentials](#credentials)). The cloud-init must not run a distribution upgrade.
 A `package_upgrade` on a GPU OS image breaks the NVIDIA driver, and the failure survives
 a reboot. If the cloud-init upgrades a package, it must set
 `apt_get_upgrade_subcommand: "upgrade"`. A broken driver still bills at the full GPU
@@ -391,7 +401,7 @@ Each stack keeps its own key.
 
 The backend must set `use_lockfile = true`. Scaleway Object Storage supports conditional
 writes, so the backend holds a native lock.
-The lock is necessary, because three writers exist: CI, the recovery operator, and the
+The lock is necessary, because three writers exist: CI, the operator, and the
 development host.
 A `tofu apply` must not set `-lock=false`. A pull-request plan must set
 `-lock=false`, because a plan writes no state.
@@ -413,7 +423,7 @@ together:
 1. OpenTofu must encrypt the state and the plan.
 2. A bucket policy on the state bucket must name each principal that needs the bucket,
    and no other principal.
-3. OpenTofu must not create the pipeline key or the recovery key.
+3. OpenTofu must not create the pipeline key, the operator key, or the train key.
 
 A bucket policy is an allow list.
 A Deny statement has no effect under version `2023-04-17`. A bucket holds one policy,
@@ -430,20 +440,27 @@ Scaleway offers no federation for a machine caller.
 A stored API key is the only option, so each key needs a scope, an expiry, and a
 rotation period.
 
-Two IAM applications exist.
-The persistent stack declares both applications and both policies.
+Three IAM applications split the credentials by blast radius ([decisions](decisions.md),
+D9). The persistent stack declares each application and each policy.
 The persistent stack must not declare an API key.
 
 - **The pipeline application.** Its API key lives in the CI environment, as a secret.
-  Its policy permits: apply and destroy of the `infra/` stacks; read and write of Object
-  Storage in the project; read of consumption and billing data; and the IAM
-  administration that `infra/persistent` needs, because CI applies each stack
-  ([decisions](decisions.md), D9). Project deletion is excluded.
-  The policy must not hold `OrganizationManager` or `ProjectManager`.
-- **The recovery application.** Its API key lives in the operator environment
+  Its policy permits: apply and destroy of `infra/dev`, `infra/train`, and
+  `infra/image`; read and write of Object Storage in the project; and read of
+  consumption and billing data.
+  IAM administration and project deletion are excluded, so the credential cannot widen
+  its own scope. The policy must not hold `IAMManager`, `OrganizationManager`, or
+  `ProjectManager`.
+- **The operator application.** Its API key lives in the operator environment
   (`SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, `SCW_DEFAULT_PROJECT_ID`,
-  `SCW_DEFAULT_ORGANIZATION_ID`). It is for recovery only, for example a manual
+  `SCW_DEFAULT_ORGANIZATION_ID`). A human holds it.
+  Its policy adds the IAM administration that `infra/persistent` needs.
+  In CI, only a protected manual workflow dispatch uses it, and only to apply
+  `infra/persistent`. The same application serves recovery, for example a manual
   `just infra-down` when CI is not available.
+- **The train application.** Its policy permits read and write of Object Storage in the
+  project, and nothing else.
+  Each of its keys lives for one campaign.
 
 An environment variable beats the `provider` block.
 CI must export exactly one credential set.
@@ -458,8 +475,9 @@ A new policy needs up to one minute to apply, and up to five minutes for Object 
 The first bucket call after a policy change must retry.
 
 No credential is in the repository.
-A human creates each API key with `scw iam api-key create` and sets `expires-at`. An
-expiry cannot be changed afterwards, so a rotation is always a create and a delete.
+A human creates the pipeline key and the operator key with `scw iam api-key create` and
+sets `expires-at`. An expiry cannot be changed afterwards, so a rotation is always a
+create and a delete.
 An application holds several keys at the same time, so a rotation causes no outage.
 Rotate the pipeline key after each training campaign, and at 90 days.
 
@@ -470,6 +488,24 @@ Rotation order:
 3. Run one workflow and confirm it passes.
 4. Delete the old key.
 
+### The train credential
+
+A Scaleway instance has no metadata identity.
+`user_data` is readable through the instance API. A managed `scaleway_iam_api_key`
+writes its secret to state.
+The train key therefore must not touch OpenTofu, `user_data`, or state:
+
+1. At `just infra-up train`, CI creates a key on the train application with
+   `scw iam api-key create`, and sets `expires-at` to the value of the `ttx:expires`
+   tag.
+2. CI delivers the key to the instance over SSH, after boot.
+   The SSH channel is the same transport that `just train cpt` uses.
+3. The first SSH step synchronizes the corpus to scratch NVMe.
+4. `just infra-down train` deletes the key.
+   The expiry is the backstop when the teardown fails.
+
+### SSH keys
+
 Each SSH key is an IAM resource.
 `ssh_key_ids` is required on the metal server, and a change to it forces a reinstall.
 Rescue mode authenticates with the same keys.
@@ -477,7 +513,7 @@ The runbook must record which key reaches which host.
 
 ## Resources outside OpenTofu
 
-Six resources exist outside OpenTofu.
+Seven resources exist outside OpenTofu.
 Each one is a documented exception to the rule at the top of this document.
 The bootstrap runbook records each one.
 
@@ -487,12 +523,13 @@ The bootstrap runbook records each one.
 | The state bucket | It holds the state of every stack | A human, once |
 | The lifecycle rule of the state bucket | `scw` has no lifecycle argument | A human, with an S3 client |
 | The quota grants | Scaleway sets a quota through Support only | A human, per offer |
-| The pipeline key and the recovery key | A managed key writes its secret to state | A human, per rotation |
+| The pipeline key and the operator key | A managed key writes its secret to state | A human, per rotation |
+| The train API key | A managed key writes its secret to state | CI, per campaign |
 | An OpenBSD OS install on a metal server | No API path exists | A human, per install |
 
 ## Prerequisites
 
-Four human acts precede the first apply.
+These human acts precede the first apply.
 No credential replaces them.
 
 | Prerequisite | Why |
@@ -501,6 +538,10 @@ No credential replaces them.
 | A quota grant for `H100-1-80G` | Scaleway grants none by default |
 | A quota of at least 1 for the dev offer, per zone | An apply fails without it |
 | The Organization security settings | MFA and the maximum credential duration |
+| The KVM test on one virtual instance | It selects the `infra/dev` host type |
+| A live price read | The GPU and storage prices are unverified after 2026-06-01 |
+| The GPU fallback analysis, with `scw instance server-type list` | The datasheet is not a complete offer list |
+| The marketplace label of the GPU OS image | The train stack resolves the image by label |
 
 ## Spend guardrails
 
@@ -640,8 +681,9 @@ Each trigger binds to one credential and one guard:
 | --- | --- | --- | --- |
 | `pull_request` | `tofu fmt -check`, `tofu validate` | none | Each pull request |
 | `pull_request` | `tofu plan -lock=false` | none, or read only | The branch is not a fork |
-| `push` to `main` | `tofu apply` | pipeline | Environment `infra-apply` |
-| `workflow_dispatch` | Any stack action | pipeline | Environment `infra-apply` |
+| `push` to `main` | `tofu apply` of `dev`, `train`, `image` | pipeline | Environment `infra-apply` |
+| `workflow_dispatch` | Any action of `dev`, `train`, `image` | pipeline | Environment `infra-apply` |
+| `workflow_dispatch` | `tofu apply` of `infra/persistent` | operator | Environment `infra-admin`, with a required human review |
 | `schedule` | Watchdog, reinstall | pipeline | Environment `infra-apply` |
 
 A workflow must not use the `pull_request_target` trigger.
@@ -650,9 +692,11 @@ A plan job must not run on a pull request from a fork.
 branch executes untrusted code.
 The `infra-apply` environment must permit the `main` branch only.
 
-Operation runs with the pipeline credential: plan and apply of each stack, training
-campaigns, evaluation sweeps, the idle watchdog, and the scheduled reinstall of the
-development host.
+The `infra-admin` environment holds the operator key.
+A required human review gates each of its runs.
+Operation runs with the pipeline credential: plan and apply of `dev`, `train`, and
+`image`, training campaigns, evaluation sweeps, the idle watchdog, and the scheduled
+reinstall of the development host.
 
 One concurrency group serializes each apply, per stack.
 The group must set `cancel-in-progress: false`, because the runner kills a cancelled
@@ -677,43 +721,17 @@ The spend guardrails bound every workflow.
 
 ## Open points
 
-Each point below conflicts with a decision, or needs evidence that no reachable source
-gives. A human must decide each one.
-This document follows the decisions as they stand.
+Each point below needs evidence that no reachable source gives.
+The bootstrap runbook closes each one.
 
-1. **D9 and the pipeline scope.** D9 makes CI apply each stack.
-   `infra/persistent` declares the IAM objects, so the pipeline credential holds IAM
-   administration and can widen its own scope.
-   The previous text of this document claimed the opposite, and that claim was false.
-   A human must choose: keep D9 and accept the scope; or amend D9 to permit a separate,
-   human-gated credential for `infra/persistent`; or amend D9 to permit a read-only plan
-   credential.
-2. **D9 and the guardrails.** D9 says the guardrails are platform controls.
-   A Scaleway budget and its alerts notify only.
-   A human must amend D9, or must name the quota as the platform control.
-3. **D9 and the operator.** D9 says the pipeline runs without an operator.
-   Four human prerequisites block the first run.
-   A human must accept them as prerequisites, or must amend D9.
-4. **D3 and the fallback offer.** The fallback analysis used the Scaleway datasheet,
-   which is not a complete offer list.
-   Redo it against `scw instance server-type list` before this document names a GPU
-   fallback.
-5. **D7 and the version floor.** OpenTofu 1.11 is a new constraint.
-   A human must approve it in D7, or must accept the pin in this document alone.
-6. **D6 and the fourth bucket.** The lane rule needs a second corpus bucket.
-   That changes “the three project buckets” in [autonomous development](agents.md).
-   Both documents must change together.
-7. **The bare-metal premise.** No source confirms `/dev/kvm` on a Scaleway virtual
-   instance, and no source confirms it on the recommended metal offer.
-   A matched virtual instance also costs less per month.
-   One hour of hourly billing settles the question, and the answer can change the
-   `infra/dev` design.
-8. **Prices.** No GPU price and no Object Storage price could be read after the revision
+1. **Prices.** No GPU price and no Object Storage price could be read after the revision
    of 2026-06-01. The Elastic Metal prices in this document were read on 2026-06-11 from
    a recorded API response.
    The cost of traffic between an instance and a bucket in the same region is unknown,
    and it is the largest unpriced item in the project.
-9. **The credential of the training instance.** No mechanism yet delivers an Object
-   Storage credential to the instance without writing it to state.
-   A Scaleway instance has no metadata identity, so it has no bootstrap identity.
-   This is design work.
+   The live price read in “Prerequisites” closes this point.
+2. **State encryption.** The OpenTofu encryption key providers are unverified.
+   Read the OpenTofu encryption documentation before you write the backend block.
+3. **The budget singleton.** The Billing API returns a list of budgets, and no source
+   says that a second create fails.
+   Import an existing budget before the first apply of `infra/persistent`.

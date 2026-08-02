@@ -44,15 +44,15 @@ Each credential has the minimum scope for its capability:
 | Capability | Credential | Scope |
 | --- | --- | --- |
 | Run the agents | Anthropic API key (`ANTHROPIC_API_KEY`) | Project workspace |
-| Infrastructure and training | Scaleway API key of the pipeline IAM application, shared with CI (separate from the recovery application of a human operator) | Apply and destroy the `infra/` stacks; read and write Object Storage in the project, which holds four buckets; read consumption and billing data, so agents can monitor their own spend. Project deletion is excluded. |
+| Infrastructure and training | Scaleway API key of the pipeline IAM application, shared with CI (separate from the operator application of a human) | Apply and destroy `infra/dev`, `infra/train`, and `infra/image`; read and write Object Storage in the project, which holds four buckets; read consumption and billing data, so agents can monitor their own spend. IAM administration and project deletion are excluded. |
 | Code review and CI | GitHub token | Push branches, open PRs, read checks. Pushes to the default branch are excluded — changes land only through reviewed PRs. |
 | Base models and datasets | Hugging Face token | Read, for base-model downloads. Write access is withheld until release, which is a human step. |
 | Release signatures | signify private key | **Never available to agents.** A signature is a human act, without exception. |
 
-The scope of the pipeline credential has an open point.
-D9 makes CI apply each stack, and `infra/persistent` declares the IAM objects, so the
-credential holds IAM administration.
-A human must resolve the conflict ([infrastructure](infrastructure.md), “Open points”).
+The operator application applies `infra/persistent`, which declares the IAM objects.
+A human holds its key, and a protected manual workflow dispatch is the only CI route to
+it ([infrastructure](infrastructure.md)). Thus the pipeline credential cannot widen its
+own scope.
 
 IAM cannot grant access to one bucket.
 A bucket policy is the only per-bucket control.

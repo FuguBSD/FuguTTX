@@ -62,7 +62,8 @@ One escape blocks the release.
   profiles.
 - The suite runs OpenBSD/amd64 guests, because no Scaleway offer gives a native arm64
   OpenBSD host ([infrastructure](infrastructure.md)). An arm64-only harness fault
-  escapes the suite.
+  escapes the suite. Before a release, the harness smoke suite must pass on the target
+  arm64 hardware ([decisions](decisions.md), D2).
 - The suite must fix a parallelism target.
   The target selects the Elastic Metal offer of the development host.
   The current infrastructure specification assumes four parallel scenarios.
