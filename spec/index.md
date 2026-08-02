@@ -13,14 +13,14 @@ The recipe is short:
 
 1. Fine-tune Qwen3-4B (Apache 2.0) with QLoRA: continued pretraining (CPT), then agentic
    supervised fine-tuning (SFT).
-2. Train on one Scaleway H100 instance (from €2.73/hour).
+2. Train on one Scaleway H100 instance.
    Destroy the instance after each session.
 3. Quantize to GGUF Q4_K_M.
 4. Serve with the OpenBSD `misc/llama.cpp` port, CPU only, in 16 GB RAM.
 
-A monthly cap governs all cloud spend.
-The initial cap is €1,500. Platform guardrails enforce the cap
-([infrastructure](infrastructure.md)).
+A monthly budget governs all cloud spend.
+The initial budget is €1,500. A per-Organization quota is the guardrail that blocks.
+The budget and its alerts notify only ([infrastructure](infrastructure.md)).
 
 ## How to use this specification
 

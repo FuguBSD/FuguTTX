@@ -2,16 +2,23 @@
 
 ## Instances
 
-Scaleway, in Paris PAR-2 or Warsaw WAW-2. On-demand, per-minute billing.
-Prices before tax, “starting at” values.
+Scaleway, in zone `fr-par-2` ([infrastructure](infrastructure.md)). On-demand billing,
+per minute of uptime, with a documented minimum of 60 minutes.
 
 | Instance | GPUs | GPU VRAM | System RAM | €/hour |
 | --- | --- | --- | --- | --- |
 | H100-1-80G | 1× H100 PCIe | 80 GB | 240 GB | €2.73 |
 | L40S-1-48G | 1× L40S | 48 GB | 96 GB | €1.47 |
 
-Extra billed items: Block Storage (root volume), Flexible IP (€0.004/hour), Object
-Storage. Scratch NVMe is ephemeral: it disappears at instance deletion.
+**Each price in this table is unverified.** Scaleway revised prices on 2026-06-01, and
+no reachable source confirmed a GPU price after that date
+([review](../docs/research/scaleway-infrastructure-review.md)). Read the live price
+before you plan a campaign.
+Scaleway grants no quota for an H100 offer, so an operator must request the quota before
+the first apply.
+
+Extra billed items: the block root volume, the routed IPv4 address, and Object Storage.
+Scratch NVMe is ephemeral: it disappears at instance deletion.
 By design, nothing durable lives on the instance.
 
 **The H100-1-80G is the standard training instance.** It is the default in the OpenTofu
