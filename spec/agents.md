@@ -18,10 +18,14 @@ Do not work around it.
 
 ## Runtime environment
 
-Agents need a persistent POSIX development environment with the full toolchain: git,
-`just`, uv (Python 3.12), OpenTofu, Perl with `prove`, qemu, llama.cpp, and the `scw`
-CLI. A bootable OpenBSD qemu image with snapshot support must be available.
-The Perl harness and the agentic evaluation suite operate correctly only on OpenBSD.
+Agents work on the development host: the Elastic Metal server of the `infra/dev` stack,
+with Linux and KVM ([infrastructure](infrastructure.md)). Bare metal gives hardware
+virtualization for the OpenBSD guests and full native CPU performance for inference.
+The host carries the full toolchain: git, `just`, uv (Python 3.12), OpenTofu, Perl with
+`prove`, qemu with KVM, llama.cpp, and the `scw` CLI. A bootable OpenBSD qemu image with
+snapshot support must be available on the host.
+The Perl harness and the agentic evaluation suite operate correctly only on OpenBSD. The
+host is rebuilt from code on a schedule, and it holds no durable state.
 
 Long work — training campaigns, corpus builds, evaluation sweeps — must continue across
 sessions, or hand off cleanly between sessions.
@@ -36,20 +40,24 @@ Each credential has the minimum scope for its capability:
 | Capability | Credential | Scope |
 | --- | --- | --- |
 | Run the agents | Anthropic API key (`ANTHROPIC_API_KEY`) | Project workspace |
-| Infrastructure and training | Scaleway API key, from a dedicated IAM application (separate from a human operator’s) | Apply and destroy the `infra/` stacks; read and write the three project buckets; read consumption and billing data, so agents can monitor their own spend. IAM administration is excluded. |
+| Infrastructure and training | Scaleway API key of the pipeline IAM application, shared with CI (separate from the recovery application of a human operator) | Apply and destroy the `infra/` stacks; read and write the three project buckets; read consumption and billing data, so agents can monitor their own spend. IAM administration and project deletion are excluded. |
 | Code review and CI | GitHub token | Push branches, open PRs, read checks. Pushes to the default branch are excluded — changes land only through reviewed PRs. |
 | Base models and datasets | Hugging Face token | Read, for base-model downloads. Write access is withheld until release, which is a human step. |
 | Release signatures | signify private key | **Never available to agents.** A signature is a human act, without exception. |
 
 ## Spend controls
 
-Agents can start GPU instances, so cost discipline is enforced, not assumed:
+Agents and CI can start GPU instances and metal servers, so cost discipline is a
+platform control, not a convention.
+The controls live in the infrastructure specification
+([spend guardrails](infrastructure.md)): the monthly cap, the billing alerts, the
+pre-apply consumption check, and the idle watchdog.
+Two habits remain:
 
-- A billing alert and a documented monthly cap on the Scaleway project.
 - `just infra-status` at the start and at the end of each work session.
 - `just infra-down` before a session ends with no training in flight.
-- Spend above the per-campaign budget in the training runbook is possible only with
-  human approval.
+
+Only a human raises the cap.
 
 ## Feedback loops
 
@@ -90,7 +98,9 @@ Four decisions stay human:
    skill. The invocation is the approval.
 2. **Releases.** Signatures (signify) and publication of weights, datasets, and the
    harness port.
-3. **Spend** above the documented per-campaign budget.
+3. **Spend** above the monthly cap.
+   The pipeline stops at the cap.
+   A human raises it.
 4. **Licensing lanes.** Each change to what enters the training corpus versus the
    eval/RAG corpus.
 

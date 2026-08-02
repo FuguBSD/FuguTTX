@@ -18,7 +18,9 @@ The recipe is short:
 3. Quantize to GGUF Q4_K_M.
 4. Serve with the OpenBSD `misc/llama.cpp` port, CPU only, in 16 GB RAM.
 
-The full GPU budget for TTX 1 is approximately €200–500.
+A monthly cap governs all cloud spend.
+The initial cap is €1,500. Platform guardrails enforce the cap
+([infrastructure](infrastructure.md)).
 
 ## How to use this specification
 
@@ -49,7 +51,7 @@ When you make a plan:
 | Document | Contents |
 | --- | --- |
 | [Overview](overview.md) | Goals, non-goals, and terminology. |
-| [Decisions](decisions.md) | The eight decisions that control all plans. |
+| [Decisions](decisions.md) | The nine decisions that control all plans. |
 | [Variants](variants.md) | User personas and the promotion rule for variants. |
 
 ### System components

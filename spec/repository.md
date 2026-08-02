@@ -20,7 +20,7 @@ The boundary is where the code runs.
 | Format and lint | Ruff for Python, flowmark for Markdown | One formatter per language. flowmark makes semantic line breaks: one sentence per line. This agrees with the ASD-STE100 writing standard and keeps diffs small. |
 | Inference runtime | llama.cpp everywhere | The same runtime serves development (Metal on Apple Silicon) and production (OpenBSD CPU). What is validated is what ships. |
 | Teacher/judge model | Qwen3-32B (Apache 2.0), served by vLLM on the H100 | Clean license provenance for synthetic data. One deployment generates traces and grades evaluations. |
-| CI | GitHub Actions | The repository and the corpus mirrors are on GitHub. CI is lint, test, and validation only, with no cloud credentials. |
+| CI | GitHub Actions | The repository and the corpus mirrors are on GitHub. CI validates each push, and it operates the pipeline with the scoped pipeline credential ([infrastructure](infrastructure.md)). |
 
 ## Layout
 
@@ -47,7 +47,7 @@ fuguttx/
 │   ├── lib/TTX/                 #   Agent.pm, LLM.pm, Tools.pm, Sandbox.pm, Audit.pm
 │   ├── t/                       #   prove(1) tests
 │   └── port/                    #   OpenBSD port skeleton (Makefile, PLIST, DESCR, rc.d)
-├── infra/                       # OpenTofu for Scaleway (modules/, persistent/, train/)
+├── infra/                       # OpenTofu for Scaleway (modules/, persistent/, dev/, train/)
 ├── datasets/                    # dataset cards + manifests (not raw data)
 ├── models/                      # model cards + release manifests (GGUF via object storage/HF)
 ├── docs/                        # corpus/licensing notes, runbooks, research notes
@@ -67,7 +67,9 @@ CI runs the same gate.
 
 ## CI
 
-GitHub Actions, with no cloud credentials:
+GitHub Actions runs two kinds of workflows.
+
+Validation, on each push, with no cloud credentials:
 
 - Python packages: ruff and pytest.
 - Markdown documents: `flowmark --check`.
@@ -75,4 +77,12 @@ GitHub Actions, with no cloud credentials:
 - Infrastructure: `tofu fmt -check` and `tofu validate`.
 - Training: Axolotl configuration validation.
 
-Heavy training stays manual, on Scaleway.
+Operation, with the pipeline credential:
+
+- Plan and apply of the `infra/` stacks.
+- Training campaigns and evaluation sweeps, end to end.
+- The idle watchdog and the scheduled rebuild of the development host.
+
+One concurrency group serializes each operation.
+The platform guardrails bound every workflow ([infrastructure](infrastructure.md),
+[autonomous development](agents.md)).

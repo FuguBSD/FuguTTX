@@ -6,12 +6,18 @@ A plan for a phase must satisfy the listed documents and the [decisions](decisio
 
 ## Phase 0 — Bootstrap
 
-- **Scope:** the monorepo scaffold, CI, the OpenTofu persistent stack, a train-stack
-  round trip, the runbooks, and the autonomous-development environment (toolchain,
-  scoped credentials, OpenBSD qemu image, `CLAUDE.md`).
+- **Scope:** the monorepo scaffold, CI, the OpenTofu persistent stack, the development
+  host (`infra/dev`), a train-stack round trip from CI, the spend guardrails, the
+  runbooks, and the autonomous-development environment (toolchain, scoped credentials,
+  OpenBSD qemu image, `CLAUDE.md`).
 - **Exit criteria:**
   - CI is green.
-  - `just infra-up train` and then `just infra-down train` complete end to end.
+  - CI applies and destroys the train stack end to end (`just infra-up train`, then
+    `just infra-down train`), with the pipeline credential.
+  - The development host is provisioned from `infra/dev`, and a rebuild from code
+    reproduces it.
+  - The spend guardrails are active: the billing alerts, the pre-apply consumption
+    check, and the idle watchdog.
   - A development agent completes a full cycle without aid: plan → implement →
     `just check` → PR.
 - **Documents:** [repository](repository.md), [infrastructure](infrastructure.md),

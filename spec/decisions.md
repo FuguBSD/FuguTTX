@@ -1,6 +1,6 @@
 # Decisions
 
-These eight decisions control all plans.
+These nine decisions control all plans.
 A plan must not go against a decision.
 To change a decision, change this document first.
 
@@ -87,3 +87,15 @@ Agents plan, implement, train, and evaluate end to end.
 Humans keep a short list of decisions: merges, release signatures, licensing lanes, and
 spend above the budget.
 Details: [autonomous development](agents.md).
+
+## D9 — Operation is continuous, and the platform enforces the guardrails
+
+The pipeline runs from CI, without an operator in the loop.
+CI holds the API key of a dedicated pipeline IAM application, and it runs `tofu plan`
+and `tofu apply` for every stack.
+The guardrails are platform controls, not conventions: scoped IAM policies, a monthly
+spend cap with billing alerts, a pre-apply consumption check, and an idle-instance
+watchdog. Workloads that need hardware virtualization or full native performance run on
+Elastic Metal servers, not on virtual instances.
+The four human decisions of D8 stand.
+Details: [infrastructure](infrastructure.md), [autonomous development](agents.md).

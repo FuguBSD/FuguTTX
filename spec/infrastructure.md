@@ -12,20 +12,39 @@ The infrastructure code has the ISC license, like all project tooling.
 infra/
 ├── modules/
 │   ├── gpu-instance/     # scaleway_instance_server: GPU OS image, cloud-init, flexible IP
+│   ├── metal-server/     # scaleway_baremetal_server: OS install, SSH keys, provisioning
 │   └── bucket/           # scaleway_object_bucket + access policy
-├── persistent/           # long-lived stack: object storage, IAM — applied rarely
+├── persistent/           # long-lived stack: object storage, IAM, billing alerts — applied rarely
+├── dev/                  # the development host: one Elastic Metal server — long-lived, rebuildable
 └── train/                # ephemeral stack: one GPU instance — up/down around each session
 ```
 
+## Bare metal rule
+
+A workload runs on an Elastic Metal server, not on a virtual instance, when it needs
+hardware virtualization or full native performance.
+The agentic evaluation suite needs both: qemu with KVM for the OpenBSD guests, and
+native CPU speed for llama.cpp inference in each scenario.
+Scaleway provisions virtual instances and Elastic Metal servers with OpenTofu, and both
+can boot Linux or OpenBSD. Elastic Metal bills per hour.
+
 ## Stacks
 
-Two stacks, with two lifecycles:
+Three stacks, with three lifecycles:
 
 - **`infra/persistent`** — the Object Storage buckets `ttx-corpus`, `ttx-checkpoints`,
-  and `ttx-artifacts`, plus an IAM application with an API key.
-  The key has access to exactly those buckets and is for the training instances.
-  Apply this stack rarely.
+  and `ttx-artifacts`; the IAM applications, their policies, and their API keys; and the
+  billing alerts. Apply this stack rarely.
   Review changes like all code.
+- **`infra/dev`** — the development host: one Elastic Metal server, with Linux and KVM.
+  It is the runtime for the development agents and for the evaluation sweeps
+  ([autonomous development](agents.md)). It runs the OpenBSD guests of the agentic suite
+  under qemu with KVM, with scenarios in parallel.
+  Linux is the host OS, because qemu has hardware acceleration only there.
+  OpenBSD is always the guest.
+  The host is long-lived, but a rebuild from code must reproduce it.
+  Rebuild it from code on a schedule, so drift cannot accumulate.
+  The host holds no durable state.
 - **`infra/train`** — one `scaleway_instance_server`. The `instance_type` variable
   defaults to `H100-1-80G`; `L40S-1-48G` is for budget runs.
   The instance boots the Scaleway GPU OS image and has a flexible IP. Cloud-init pulls
@@ -36,13 +55,25 @@ Two stacks, with two lifecycles:
   There are no stop or hibernate half-states: **down means destroyed**. Scratch NVMe is
   ephemeral, so destruction loses nothing.
 
+### Native OpenBSD hosts
+
+Scaleway provisions OpenBSD with OpenTofu, as a virtual instance or on Elastic Metal.
+No current suite requires a native OpenBSD host.
+When a suite requires one — a native amd64 benchmark host, or a build-graded evaluation
+host with chrooted source and port builds — add it as its own stack, with the same
+lifecycle discipline.
+Do not add the host before the suite exists ([evaluation](evaluation.md)).
+
 ## Durability
 
 Object Storage is the only durable layer.
 The corpus synchronizes down at boot.
 Checkpoints synchronize up during training.
-Release artifacts land in `ttx-artifacts`. Thus `tofu destroy` cannot lose data.
-This invariant permits the aggressive teardown discipline that keeps costs low.
+Release artifacts and scorecards land in `ttx-artifacts`. Thus `tofu destroy` cannot
+lose data.
+The development host follows the same rule: everything on it rebuilds from git
+and Object Storage. This invariant permits the aggressive teardown discipline that keeps
+costs low.
 
 ## State
 
@@ -50,15 +81,40 @@ OpenTofu state lives in a dedicated Scaleway Object Storage bucket, through the
 S3-compatible backend.
 The state bucket is the only resource not managed by OpenTofu.
 Make it once with `scw object bucket create`, per the bootstrap runbook.
-FuguTTX is a single-operator project, so no distributed state lock is configured.
-This is documented. Examine it again if the team grows.
+CI is the only environment that runs `apply`, and one GitHub Actions concurrency group
+serializes each run.
+Thus no distributed state lock is necessary.
 
 ## Credentials
 
-`SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, and `SCW_DEFAULT_PROJECT_ID` come from the operator
-environment. They must not be in the repository.
+Two IAM applications exist.
+The persistent stack declares both:
+
+- **The pipeline application.** Its API key lives in the CI environment, as a secret.
+  Its policy permits: apply and destroy of the `infra/` stacks; read and write of the
+  three project buckets; read of consumption and billing data.
+  IAM administration and project deletion are excluded.
+  A pipeline credential cannot widen its own scope.
+- **The recovery application.** Its API key lives in the operator environment
+  (`SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, `SCW_DEFAULT_PROJECT_ID`). It is for recovery
+  only, for example a manual `just infra-down` when CI is not available.
+
+No credential is in the repository.
 The training instance receives only the bucket-scoped API key from the persistent stack.
-Rotate that key after each training campaign.
+Rotate the pipeline key and the bucket-scoped key after each training campaign.
+
+## Spend guardrails
+
+The guardrails are platform controls, not conventions:
+
+- A documented monthly cap on the Scaleway project.
+  The initial cap is €1,500 ([training](training.md)). Only a human raises the cap.
+- Billing alerts at 50, 75, and 100 percent of the cap.
+- A pre-apply consumption check: before each `tofu apply`, the pipeline reads the
+  Scaleway consumption API. At or above the cap, the apply stops.
+- An idle watchdog: a scheduled CI job runs `just infra-status` and destroys a train
+  stack with no training in flight.
+- The IAM policies above.
 
 ## Task runner
 
@@ -71,11 +127,20 @@ just infra-down train     # tofu destroy — billing stops here
 just infra-status         # list live resources, so nothing idles unnoticed
 ```
 
+The same recipes run in CI and on the development host.
 On success, `just infra-up` shows the hourly price of the instance.
 `just infra-down` is a first-class step of the training runbook, not an afterthought.
 
 ## CI
 
-`tofu fmt -check` and `tofu validate` run on each push.
-CI holds no cloud credentials.
-CI does not run `plan` or `apply`. An operator runs them, with local credentials.
+CI operates the pipeline.
+An operator does not need to.
+
+- Validation runs on each push: `tofu fmt -check` and `tofu validate`.
+- Operation runs with the pipeline credential: plan and apply of every stack, training
+  campaigns, evaluation sweeps, the idle watchdog, and the scheduled rebuild of the
+  development host.
+- One concurrency group serializes each apply.
+  The workflow logs are the audit trail.
+- A human can start any stack action with a manual workflow dispatch.
+- The spend guardrails bound every workflow.

@@ -55,6 +55,11 @@ Thus instance destruction cannot lose work.
 
 ## Budget
 
+The budget is a guardrail, not the design constraint.
+A documented monthly cap governs all cloud spend, and platform controls enforce it
+([infrastructure](infrastructure.md)). The initial cap is **€1,500 per month**. Only a
+human raises the cap.
+
 Order-of-magnitude estimates, for one H100-1-80G at approximately €2.73/hour:
 
 | Item | GPU-hours | Cost per run |
@@ -66,8 +71,16 @@ Order-of-magnitude estimates, for one H100-1-80G at approximately €2.73/hour:
 For evaluation and iteration, budget 2–3 times the clean-run cost, for sweeps and
 restarts.
 
-The full TTX 1 program (CPT + SFT + several iterations) costs approximately **€200–500**
-of GPU time. Each promoted variant adds approximately €50–150. Variants are
-SFT-dominated, because they share the CPT checkpoint ([variants](variants.md)).
+Continuous operation adds recurring items, per month:
+
+| Item | Cost per month |
+| --- | --- |
+| Development host (Elastic Metal, `infra/dev`) | approximately €200–450 |
+| GPU campaigns, in an active phase | approximately €300–800 |
+| Object Storage, flexible IPs, and other items | below €50 |
+
+Each promoted variant adds approximately €50–150 of GPU time.
+Variants are SFT-dominated, because they share the CPT checkpoint
+([variants](variants.md)).
 
 Local development iteration is almost free: llama.cpp with Metal on Apple Silicon.
