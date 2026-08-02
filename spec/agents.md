@@ -20,12 +20,16 @@ Do not work around it.
 
 Agents work on the development host: the Elastic Metal server of the `infra/dev` stack,
 with Linux and KVM ([infrastructure](infrastructure.md)). Bare metal gives hardware
-virtualization for the OpenBSD guests and full native CPU performance for inference.
-The host carries the full toolchain: git, `just`, uv (Python 3.12), OpenTofu, Perl with
-`prove`, qemu with KVM, llama.cpp, and the `scw` CLI. A bootable OpenBSD qemu image with
-snapshot support must be available on the host.
-The Perl harness and the agentic evaluation suite operate correctly only on OpenBSD. The
-host is rebuilt from code on a schedule, and it holds no durable state.
+virtualization for the OpenBSD guests.
+Native CPU performance is a convenience, because a published performance number comes
+only from the target hardware ([evaluation](evaluation.md)). The host carries the full
+toolchain: git, `just`, uv (Python 3.12), OpenTofu, Perl with `prove`, qemu with KVM,
+llama.cpp, and the `scw` CLI. The host must pin an exact qemu version.
+A bootable OpenBSD qemu image with snapshot support must be available on the host.
+The `infra/image` stack produces that image and stores it in the artifacts bucket
+([infrastructure](infrastructure.md)). The Perl harness and the agentic evaluation suite
+operate correctly only on OpenBSD. CI reinstalls the host in place each month, and the
+host holds no durable state.
 
 Long work — training campaigns, corpus builds, evaluation sweeps — must continue across
 sessions, or hand off cleanly between sessions.
@@ -40,24 +44,34 @@ Each credential has the minimum scope for its capability:
 | Capability | Credential | Scope |
 | --- | --- | --- |
 | Run the agents | Anthropic API key (`ANTHROPIC_API_KEY`) | Project workspace |
-| Infrastructure and training | Scaleway API key of the pipeline IAM application, shared with CI (separate from the recovery application of a human operator) | Apply and destroy the `infra/` stacks; read and write the three project buckets; read consumption and billing data, so agents can monitor their own spend. IAM administration and project deletion are excluded. |
+| Infrastructure and training | Scaleway API key of the pipeline IAM application, shared with CI (separate from the recovery application of a human operator) | Apply and destroy the `infra/` stacks; read and write Object Storage in the project, which holds four buckets; read consumption and billing data, so agents can monitor their own spend. Project deletion is excluded. |
 | Code review and CI | GitHub token | Push branches, open PRs, read checks. Pushes to the default branch are excluded — changes land only through reviewed PRs. |
 | Base models and datasets | Hugging Face token | Read, for base-model downloads. Write access is withheld until release, which is a human step. |
 | Release signatures | signify private key | **Never available to agents.** A signature is a human act, without exception. |
 
+The scope of the pipeline credential has an open point.
+D9 makes CI apply each stack, and `infra/persistent` declares the IAM objects, so the
+credential holds IAM administration.
+A human must resolve the conflict ([infrastructure](infrastructure.md), “Open points”).
+
+IAM cannot grant access to one bucket.
+A bucket policy is the only per-bucket control.
+
 ## Spend controls
 
-Agents and CI can start GPU instances and metal servers, so cost discipline is a
-platform control, not a convention.
+Agents and CI can start GPU instances and metal servers, so cost discipline must not
+rest on a convention.
 The controls live in the infrastructure specification
-([spend guardrails](infrastructure.md)): the monthly cap, the billing alerts, the
-pre-apply consumption check, and the idle watchdog.
-Two habits remain:
+([spend guardrails](infrastructure.md)): the per-Organization quotas, the scoped IAM
+policies, the monthly budget, the billing alerts, the pre-apply forecast check, and the
+idle watchdog. Only the quotas and the IAM policies block.
+The budget and the alerts notify.
+Two habits therefore remain:
 
 - `just infra-status` at the start and at the end of each work session.
 - `just infra-down` before a session ends with no training in flight.
 
-Only a human raises the cap.
+Only a human raises the budget.
 
 ## Feedback loops
 

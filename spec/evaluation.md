@@ -57,5 +57,12 @@ One escape blocks the release.
 - Performance benchmarks run on the target hardware only ([inference](inference.md)). A
   number from an amd64 server does not substitute for the published Mac mini numbers.
 - Each scorecard records the model version, the suite version, and a hardware profile
-  identifier. Scorecards accumulate in the `ttx-artifacts` bucket, under a versioned
-  prefix. Do not compare results across hardware profiles.
+  identifier. Scorecards accumulate in the artifacts bucket, under a versioned prefix
+  ([infrastructure](infrastructure.md)). Do not compare results across hardware
+  profiles.
+- The suite runs OpenBSD/amd64 guests, because no Scaleway offer gives a native arm64
+  OpenBSD host ([infrastructure](infrastructure.md)). An arm64-only harness fault
+  escapes the suite.
+- The suite must fix a parallelism target.
+  The target selects the Elastic Metal offer of the development host.
+  The current infrastructure specification assumes four parallel scenarios.
