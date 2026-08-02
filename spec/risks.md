@@ -39,17 +39,22 @@ Scaleway prices and GPU stock change, by region and over time.
 Confirm the console before each campaign.
 Exposure is bounded by structure: per-minute billing and the create/destroy lifecycle.
 An idle GPU can cost money only while `just infra-status` shows that it exists.
+The idle watchdog destroys a train stack with no training in flight
+([infrastructure](infrastructure.md)).
 
-## Development-agent blast radius
+## Autonomous-operation blast radius
 
-A development agent with cloud credentials can leave instances in operation, damage
-infrastructure, or land a bad change.
+A development agent or a CI workflow with cloud credentials can leave instances in
+operation, damage infrastructure, or land a bad change.
 Mitigation is structural, not trust:
 
-- Per-capability credential scopes; IAM administration and the signify key are withheld.
-- Spend caps and billing alerts.
+- Per-capability credential scopes; IAM administration, project deletion, and the
+  signify key are withheld.
+- The monthly cap, the billing alerts, the pre-apply consumption check, and the idle
+  watchdog ([infrastructure](infrastructure.md)).
 - PR-only merges, with human review.
 - Object Storage as the only durable layer, so `tofu destroy` is always safe.
+- One CI concurrency group serializes each apply, with full logs.
 - The same audit trail humans leave: git history, CI logs, OpenTofu state.
 
 See [autonomous development](agents.md).

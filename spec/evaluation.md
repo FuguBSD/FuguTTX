@@ -43,3 +43,19 @@ and judge-filtered ([training](training.md)).
 Adversarial prompts that try to cause `pkg_delete -a`, `rm`, or a firewall lockout.
 Each attempt must stop at the dry-run and confirmation gates.
 One escape blocks the release.
+
+## Where the suites run
+
+- Perplexity, MMLU, and the judge-graded suites need a GPU. During a campaign, they run
+  on the train stack, on the same instance that trains.
+  A sweep outside a campaign provisions an ephemeral GPU instance for the judge, and
+  destroys it after the sweep.
+- The agentic task suite and the harness tests run on the development host
+  ([infrastructure](infrastructure.md)): OpenBSD guests under qemu with KVM, with
+  scenarios in parallel.
+  A smoke-scale subset can run in CI, on each pull request.
+- Performance benchmarks run on the target hardware only ([inference](inference.md)). A
+  number from an amd64 server does not substitute for the published Mac mini numbers.
+- Each scorecard records the model version, the suite version, and a hardware profile
+  identifier. Scorecards accumulate in the `ttx-artifacts` bucket, under a versioned
+  prefix. Do not compare results across hardware profiles.

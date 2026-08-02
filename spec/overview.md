@@ -21,6 +21,8 @@ Evaluation evidence promotes a candidate to a release ([variants](variants.md)).
 - The pipeline is reproducible end to end.
   Each pipeline stage runs from one `just` recipe.
   OpenTofu declares each cloud resource.
+- The pipeline operates continuously from CI, in platform-enforced guardrails
+  ([infrastructure](infrastructure.md)).
 
 ## Non-goals
 
