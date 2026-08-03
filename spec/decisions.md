@@ -79,12 +79,22 @@ Details: [corpus](corpus.md).
 ## D7 — Languages and tools are fixed
 
 Python for all model-side work.
-Perl for the harness, with base modules only.
+Perl for the harness body, with base modules only.
+C for the doas target wrappers, against libc alone.
 OpenTofu, 1.11 or later, for infrastructure.
 `just` as the task runner.
 Python must not ship to the OpenBSD target.
 The harness must not have dependencies outside OpenBSD base.
-Details: [repository](repository.md).
+
+The harness has two sides, and the doas boundary divides them.
+Perl runs on the unprivileged side of doas.
+C runs on the privileged side.
+The C never faces the model.
+The Perl never runs as root.
+Each doas target is a fixed-function C wrapper.
+It validates its arguments, and it calls the real command.
+The C wrappers use libc alone, so they add no dependency outside base.
+Details: [repository](repository.md), [harness](harness.md).
 
 ## D8 — Claude agents develop the project autonomously
 

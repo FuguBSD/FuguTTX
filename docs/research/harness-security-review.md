@@ -18,21 +18,22 @@ The review confirms the three central choices:
 3. Perl 5 from base is the correct language for the harness body.
    Section 3 gives the full argument.
 
-The review finds four high-severity gaps and a set of medium ones.
+The review finds three high-severity gaps and a set of medium ones.
 None of them breaks the direction.
 All of them are specification defects that code would inherit.
+Three cold reviewers verified each finding against primary sources; section 5 records
+the outcomes and four findings they added.
 
 - The doas argument model does not generalize. Exact-argument rules cannot cover
   dynamic values, and rules without `args` permit every argument.
   The correction is a set of fixed-function wrapper programs, and C is the right
   language for them (finding 1, section 3.3).
-- The confirmation digest does not cover the candidate file content, so a
-  time-of-check to time-of-use gap exists between confirmation and installation
-  (finding 2).
 - Base Perl cannot pass file descriptors, so the `sendfd`/`recvfd` design cannot be
   built as written (finding 3).
 - The parent unveil set is too small to run the tool list the same document defines
   (finding 4).
+- The confirmation digest does not cover the candidate file content or the argument
+  vector, so a confirm-to-install race exists (finding 2, Medium after review).
 
 ## 2. Findings
 
@@ -41,7 +42,7 @@ Order is by severity.
 | # | Severity | Line | Finding | Correction |
 | --- | --- | --- | --- | --- |
 | 1 | High | 159–166 | doas rules with exact `args` cannot express dynamic arguments (package names, sysctl values, service names). A rule without `args` permits every argument of the command. | Route each privileged action through a fixed-function wrapper program that validates its arguments. Permit only the wrappers in doas. Write the wrappers in C. See 2.1 and 3.3. |
-| 2 | High | 110–121, 134–137 | The digest covers the dry-run output and the diff, not the candidate file content or the command line. The specification names no location, owner, or mode for candidate files. A compromised `_ttx` process can rewrite the candidate between confirmation and installation. | The digest must cover the action identifier, the exact argument vector, the candidate file content, and the dry-run output. The parent must hold the candidate content in memory and must verify the file against the digest immediately before installation. See 2.2. |
+| 2 | Medium | 110–121, 134–137 | The digest covers the dry-run output and the diff, not the candidate file content or the argument vector. Nothing makes confirm-to-install atomic, so a second model-driven write can swap content the operator never saw, and the doas path re-open adds a verify-to-reopen gap. (Downgraded from High: the sibling-rewrite mechanism is refuted — pledge and unveil gate file access per process, so no sibling holds the candidate write path.) | The digest must cover the action identifier, the exact argument vector, the candidate file content, and the dry-run output. The parent must hold the content in memory, verify before install, write to a temporary file, and rename atomically. The candidate directory must be mode 0700, owner `_ttx`, unveiled by the parent alone. See 2.2. |
 | 3 | High | 36–38, 77, 79 | The pledge sets grant `sendfd` and `recvfd`, which implies `SCM_RIGHTS` descriptor passing. Base Perl has no `sendmsg`/`recvmsg` interface, so it cannot pass descriptors. | Children must inherit their socket pairs across fork and exec. The frontend must relay bytes, not descriptors. Remove `sendfd` and `recvfd` from every pledge set. The result is a smaller pledge. See 2.3. |
 | 4 | High | 77, 127–144 | The parent unveils only `/usr/bin/doas` (x), the audit log (w), and `/etc` (r). It therefore cannot execute `ifconfig`, `netstat`, `pkg_info`, or the other diagnostics, cannot write candidate files, and cannot re-execute its own program to respawn a crashed child. | Enumerate the unveil set: each allowlisted diagnostic binary (x), a candidate directory (rwc), and the `ttxd` binary (x) if children respawn after lockdown. See 2.4. |
 | 5 | Medium | 78 | `pledge("stdio inet")` permits connections to every address, not only `127.0.0.1`. A compromised model process can exfiltrate data to the network. The `llama-server` port is also open to every local user. | The model process must connect to `llama-server` during setup and must then drop to `pledge("stdio")`. On disconnection it must exit, and the parent must respawn it. Add a pf rule that blocks outbound traffic for `_ttx` and `_ttxllm` except loopback. See 2.5. |
@@ -49,7 +50,7 @@ Order is by severity.
 | 7 | Medium | 111–121 | The client shows dry-run output and diffs verbatim. Terminal escape sequences inside that data can rewrite what the operator sees, and so can forge the confirmation view. | The client must replace every non-printable byte outside newline and tab before display. The displayed diff must come from the parent, never from model text. |
 | 8 | Medium | 176–180 | `_ttx` owns the audit log, so a compromised parent can unlink and rewrite history. An `O_APPEND` descriptor does not prevent this. | The parent must also write each audit record with `syslog(3)`. `sendsyslog(2)` is permitted under the `stdio` promise, so no pledge widens. `syslogd(8)` can then forward the records to a remote host. |
 | 9 | Medium | 36–38, 110–117 | The digest algorithm, the record limits, and the loop limits are unspecified. | Specify SHA-256 through `Digest::SHA` (in base Perl). Bind each confirmation to the peer user id that saw the dry run. Cap the internal record length, the `JSON::PP` nesting depth, the `HTTP::Tiny` timeout, and the tool calls per prompt. |
-| 10 | Low | 83–87 | The internal record channel is a trust boundary, but the specification does not say so. A compromised model process can emit any well-formed record. | State the rule: the parent must validate every internal record against the tool schemas and the policy, and must treat the model process as hostile. The gates already contain this compromise; make the reasoning explicit. |
+| 10 | Medium | 83–87 | The internal record channel is a trust boundary, but the specification does not say so. A compromised model process can emit any well-formed record. (Raised from Low after review: a missing statement here can produce a missing control.) | State the rule: the parent must validate every internal record against the tool schemas and the policy, and must treat the model process as hostile. The gates already contain this compromise; make the reasoning explicit. |
 | 11 | Low | 130 | `pfctl -s` reads require root, unlike the other read-only diagnostics. | State that read-only tools run as `_ttx` without doas, except the enumerated `pfctl -s` reads, which get exact-argument doas rules. Exact rules work here because the argument set is finite. |
 | 12 | Low | 26–28, 78 | Perl loads modules lazily. A `require` after pledge fails without `rpath`. | Each process must load and initialize all modules before it pledges. Record this as an implementation rule. |
 | 13 | Low | 184–186 | `ttx fetch` pins one public key. | Pin per-generation keys and let each release name the next key, as the OpenBSD release process does with signify keys. |
@@ -80,12 +81,24 @@ The protocol binds the confirmation to what the operator saw: the dry-run output
 the diff.
 It does not bind the confirmation to what the system will do: the argument vector and
 the candidate file content.
-All `ttxd` processes run as `_ttx`, so any compromised sibling process with a file
-system view can rewrite a candidate file on disk after the operator confirms the
-diff.
-The digest must therefore cover the content, and the parent must re-verify the file
-against the digest immediately before it installs the file or passes its path to a
-privileged command.
+
+The review first stated this as a sibling-process attack.
+Peer review refuted that mechanism.
+All `ttxd` processes share the `_ttx` user, but the same user id does not grant file
+access on OpenBSD: pledge and unveil gate each process. Only the parent holds
+`wpath cpath` and an unveil of the candidate directory. The model process unveils
+nothing, and the frontend unveils only the socket path. So no sibling can rewrite a
+candidate.
+The reachable gap is a logic-level race. Nothing makes confirm-to-install atomic, so a
+second model-driven write can swap the content between the confirmation and the
+install. The doas path re-open adds a second gap: a privileged command that re-opens the
+candidate path reads whatever is there at open time, not what the parent verified.
+The digest must therefore cover the content and the argument vector.
+The parent must hold the content in memory, verify it before install, write it to a
+temporary file, and rename atomically.
+A candidate directory of mode 0700, owner `_ttx`, unveiled by the parent alone, closes
+the re-open gap: no other process can write there.
+This is defense in depth, and it stands even though the original mechanism does not.
 
 ### 2.3 Descriptor passing cannot be built in base Perl (finding 3)
 
@@ -158,8 +171,10 @@ The cost is real and accepted.
 
 ### 3.2 Perl's footguns need normative rules
 
-Perl reaches a shell through the single-string forms of `system`, `exec`, `open`,
-and through backticks.
+Perl can reach a shell through the single-string forms of `system` and `exec` (when the
+argument holds a shell metacharacter), through the pipe forms of two-argument `open`,
+and through backticks. A two-argument `open` is also injectable through mode characters
+in the filename, even without a shell.
 One such call with model-influenced data defeats the whole architecture.
 The specification fixes the language and must also fix the discipline
 (finding 6): list-form execution only, three-argument `open` only, no backticks,
@@ -223,3 +238,52 @@ C against libc alone. Both use base tools only."
 10. State the trust boundary at the internal record channel, the doas exception for
     `pfctl -s` reads, the preload-before-pledge rule, and the per-generation
     signify key practice (findings 10–13).
+
+## 5. Peer review
+
+Three cold reviewers checked the findings against primary sources: OpenBSD facts,
+Perl facts, and design logic. Each reviewer tried to refute, not to confirm.
+
+### 5.1 Outcomes
+
+- Findings 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13 hold. The corrections below refine them.
+- Finding 2 drops from High to Medium. The sibling-rewrite mechanism is refuted; the
+  content-binding correction stands as defense in depth against a logic-level race
+  (section 2.2).
+- Finding 10 rises from Low to Medium.
+- One proposed additional finding is refuted. A reviewer claimed `SO_PEERCRED` is
+  Linux-only. `getsockopt.2` documents `SO_PEERCRED` and `struct sockpeercred` on
+  OpenBSD, so specification line 106 stands. Base Perl reads the struct with
+  `getsockopt` and `unpack`; the field order is `{uid, gid, pid}`, unlike Linux.
+
+### 5.2 Refinements folded into the specification
+
+- **Finding 1.** The doas rule for a wrapper must omit the `args` clause, so the
+  argument passes to the wrapper and the wrapper holds all validation.
+- **Finding 3.** Perl sets close-on-exec on each descriptor above `$^F`. The parent
+  must clear `FD_CLOEXEC` on the inherited end, or move it below descriptor 3, or the
+  relay breaks at the first `exec`.
+- **Finding 4.** The candidate directory must not be `/etc`, which is read-only. Use a
+  dedicated directory, mode 0700, owner `_ttx`.
+- **Finding 5.** `HTTP::Tiny` opens a socket for each request, so it is unusable after
+  `pledge("stdio")`. The model process must speak HTTP/1.1 over one persistent
+  connection itself. A pledge violation kills the process with `SIGABRT`, so the parent
+  must treat abnormal child death as the respawn trigger. The pf `user` match applies
+  to TCP and UDP only.
+- **Finding 6.** Single-string `system`/`exec` reach a shell only with a shell
+  metacharacter; a plain two-argument `open` does not invoke a shell but stays
+  injectable. The list-form and three-argument rules hold regardless.
+- **Finding 8.** `Sys::Syslog` must pin `setlogsock('native')`, so it uses
+  `sendsyslog(2)` and needs no `unix` promise. The residual risk is forgery of a future
+  record; syslog protects only records already delivered.
+- **Finding 13.** OpenBSD generates each key two releases ahead and ships it in the
+  current release. State the chain, not only "the next key".
+
+### 5.3 Findings added by review
+
+| # | Severity | Finding | Correction |
+| --- | --- | --- | --- |
+| 14 | Medium | The privilege-drop procedure has no order. A root daemon that drops the user id before it clears the supplementary groups keeps a residual privilege. | Drop in order: clear supplementary groups, set the group id, set the user id, then verify each id. See harness §Safety design. |
+| 15 | Medium | The config install is not atomic, and no confirmation timeout exists. A crash mid-install leaves a truncated `/etc` file. One stalled confirmation blocks the single-session daemon. | Write to a temporary file and rename. Give each pending mutation a timeout that fails closed. See harness §Confirmation protocol. |
+| 16 | Medium | The audit records prompts, diffs, and commands, which can hold secrets (a `pf` diff, a WireGuard key, a sysctl value). The remote syslog forward of finding 8 amplifies the leak off-host. | Keep the local log mode 0600, owner `_ttx`. State the remote-forward leak as an operator trade. See harness §Safety design. |
+| 17 | Medium | `ttx fetch` verifies the signify signature at fetch time, but `llama-server` loads the GGUF later, by path, as `_ttxllm`. A writable weights directory allows a swap after verification. | Own the weights directory as `_ttx`, deny write to `_ttxllm`, and re-verify the signature at load time. See harness §Model fetch. |
