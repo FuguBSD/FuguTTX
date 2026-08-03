@@ -44,7 +44,7 @@ Do not replace one term with an other.
 | Term | Meaning |
 | --- | --- |
 | **TTX model** | The fine-tuned weights (TTX 1, a Qwen3-4B derivative), distributed as GGUF files. A model only proposes text and tool calls. A model executes nothing. |
-| **Harness** (`ttx`) | The Perl program that operates the tool loop, executes commands, and applies each safety gate. Only the harness touches the system. See [harness](harness.md). |
+| **Harness** (`ttxd` and `ttx`) | The Perl programs that operate the tool loop and apply each safety gate. The daemon `ttxd` executes commands as the `_ttx` user. The client `ttx` is the operator interface. Only the harness touches the system. See [harness](harness.md). |
 | **TTX agent** | The model and the harness together on an OpenBSD machine. This is the product. “Agentic” always refers to the behavior of this system. |
 | **Teacher/judge model** | Qwen3-32B, served by vLLM on the training instance. It generates synthetic traces (teacher) and grades evaluations (judge). It does not ship, does not execute tools, and does not touch a system. |
 | **Development agents** | Claude agents that build and maintain this repository. They are part of the process, not the product. They do not appear on the OpenBSD target. See [autonomous development](agents.md). |
