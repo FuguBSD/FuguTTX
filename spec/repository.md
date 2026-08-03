@@ -14,7 +14,8 @@ The boundary is where the code runs.
 | Model-side work (data, synthesis, training, evaluation, quantization) | Python 3.12, uv workspace, one lockfile | The ML ecosystem is Python. uv gives one lockfile and per-package installation, with no environment drift. |
 | Training framework | Axolotl (QLoRA), YAML configurations in git | One framework covers CPT and SFT. Version-controlled YAML makes each run reproducible. |
 | GPU runtime | Upstream Docker images (Axolotl for training, vLLM for the teacher) on the Scaleway GPU OS image | No custom environments on ephemeral instances. The uv workspace runs on the operator machine and in CI, not on the GPU. |
-| Harness | Perl 5 from OpenBSD base, base modules only | Perl, `OpenBSD::Pledge(3p)`, and `OpenBSD::Unveil(3p)` ship in base. The OpenBSD package tools follow the same discipline. |
+| Harness body | Perl 5 from OpenBSD base, base modules only | Perl, `OpenBSD::Pledge(3p)`, and `OpenBSD::Unveil(3p)` ship in base. The OpenBSD package tools follow the same discipline. |
+| doas target wrappers | C, against libc alone | The privileged side of doas. A small C wrapper avoids the interpreter startup surface under doas, and libc gives `pledge(2)`, `unveil(2)`, and `execv(3)`. See [D7](decisions.md) and [harness](harness.md). |
 | Infrastructure as code | OpenTofu, with the Scaleway provider | Open-source IaC agrees with the project license ethos. It makes the ephemeral GPU lifecycle safe and repeatable. |
 | Task runner | `just` | One polyglot entry point for Python, Perl, and OpenTofu. |
 | Format and lint | Ruff for Python, flowmark for Markdown | One formatter per language. flowmark makes semantic line breaks: one sentence per line. This agrees with the ASD-STE100 writing standard and keeps diffs small. |
@@ -42,9 +43,11 @@ fuguttx/
 │   │   └── configs/             #   Axolotl YAML: cpt.yaml, sft.yaml, per-variant overlays
 │   ├── ttx-eval/                # QA sets, agentic VM suite, judge client, scorecards
 │   └── ttx-quant/               # GGUF conversion + quantization sweep + signify manifest
-├── harness/                     # the on-OpenBSD harness — Perl, base modules only
-│   ├── bin/ttx                  #   entry point
+├── harness/                     # the on-OpenBSD harness
+│   ├── bin/ttx                  #   client entry point (Perl)
+│   ├── sbin/ttxd                #   daemon (Perl)
 │   ├── lib/TTX/                 #   Agent.pm, LLM.pm, Tools.pm, Sandbox.pm, Audit.pm
+│   ├── libexec/                 #   fixed-function doas target wrappers (C, libc only)
 │   ├── t/                       #   prove(1) tests
 │   └── port/                    #   OpenBSD port skeleton (Makefile, PLIST, DESCR, rc.d)
 ├── infra/                       # OpenTofu for Scaleway (modules/, persistent/, dev/, train/)
@@ -73,7 +76,9 @@ Validation, on each push, with no cloud credentials:
 
 - Python packages: ruff and pytest.
 - Markdown documents: `flowmark --check`.
-- Harness: `perl -c`, `prove`, and the no-CPAN-dependency check.
+- Harness body: `perl -c`, `prove`, taint mode, the no-CPAN-dependency check, and the
+  execution-discipline check (list-form exec, three-argument open, no backticks).
+- doas wrappers: compile with the base toolchain, and `lint`.
 - Infrastructure: `tofu fmt -check` and `tofu validate`.
 - Training: Axolotl configuration validation.
 
