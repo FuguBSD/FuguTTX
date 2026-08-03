@@ -8,10 +8,10 @@ The harness has two programs, in the pattern of `smtpd(8)`/`smtpctl(8)` and
 `vmd(8)`/`vmctl(8)`:
 
 - **`ttxd`** is the daemon.
-  It runs as the dedicated unprivileged user `_ttx`.
-  It holds the tool policy, and it executes all commands.
-- **`ttx`** is the client: the command line and the TUI.
-  The operator runs it under a normal user account.
+  It runs as the dedicated unprivileged user `_ttx`. It holds the tool policy, and it
+  executes all commands.
+- **`ttx`** is the client: the command line and the TUI. The operator runs it under a
+  normal user account.
   It speaks to `ttxd` over a local control socket.
   It executes nothing.
 
@@ -24,8 +24,8 @@ directly.
 
 The language is Perl 5 from OpenBSD base, and nothing else.
 The harness uses only modules from base: `OpenBSD::Pledge(3p)` and `OpenBSD::Unveil(3p)`
-for the sandbox, `HTTP::Tiny` for the local llama-server API, `JSON::PP` for
-tool-call parsing, and `Socket` for the control socket.
+for the sandbox, `HTTP::Tiny` for the local llama-server API, `JSON::PP` for tool-call
+parsing, and `Socket` for the control socket.
 
 **Zero CPAN dependencies is a hard constraint.
 A CI check enforces it.** The OpenBSD package tools are Perl, written against base
@@ -68,10 +68,9 @@ Base Perl has no event library, and this design does not need one.
 
 ## The three processes of ttxd
 
-`ttxd` follows the OpenBSD daemon pattern: a parent and unprivileged children,
-connected by socket pairs.
-One rule controls the design: **the process that parses untrusted input must not hold
-`exec`**. Model output is untrusted input.
+`ttxd` follows the OpenBSD daemon pattern: a parent and unprivileged children, connected
+by socket pairs. One rule controls the design: **the process that parses untrusted input
+must not hold `exec`**. Model output is untrusted input.
 
 | Process | Role | pledge, after setup | unveil |
 | --- | --- | --- | --- |
@@ -79,13 +78,13 @@ One rule controls the design: **the process that parses untrusted input must not
 | Model process | HTTP to llama-server, JSON parsing | `stdio inet` | nothing |
 | Frontend process | Control socket, session, confirmations | `stdio unix sendfd recvfd` | the socket path |
 
-- **The parent** holds the tool policy, executes each command, and writes the audit
-  log. It never sees raw model output.
+- **The parent** holds the tool policy, executes each command, and writes the audit log.
+  It never sees raw model output.
   It parses only the fixed internal record format, which the harness itself defines.
 - **The model process** speaks HTTP to `llama-server` and parses model output with
-  `JSON::PP`. It reduces each valid tool call to a fixed internal record for the
-  parent. It has no file system view and no `exec`.
-  An exploited parser bug lands in a process that can do nothing.
+  `JSON::PP`. It reduces each valid tool call to a fixed internal record for the parent.
+  It has no file system view and no `exec`. An exploited parser bug lands in a process
+  that can do nothing.
 - **The frontend process** owns the control socket and the operator session.
   It relays prompts, streamed output, and confirmations between the client and the
   parent.
@@ -101,12 +100,11 @@ A defect in the client is worth nothing.
 
 ## Control socket
 
-`ttxd` listens on `/var/run/ttxd.sock`.
-The socket has owner `_ttx`, group `ttxop`, and mode `0660`.
-Membership in the `ttxop` group is the operator grant.
+`ttxd` listens on `/var/run/ttxd.sock`. The socket has owner `_ttx`, group `ttxop`, and
+mode `0660`. Membership in the `ttxop` group is the operator grant.
 For each connection, the frontend reads the peer credentials with `getsockopt(2)` and
-`SO_PEERCRED`. The audit log attributes each session and each confirmation to that
-user id.
+`SO_PEERCRED`. The audit log attributes each session and each confirmation to that user
+id.
 
 ## Confirmation protocol
 
@@ -157,8 +155,8 @@ Safety is first-class, not optional.
   (Ruohonen, Sierszecki & Tiwari, arXiv:2607.03056).
 
 - **doas, narrow scope.** Privileged actions go through `doas` with per-command rules
-  for the `_ttx` user. doas trusts only `_ttx`.
-  The operator account needs no rules.
+  for the `_ttx` user.
+  doas trusts only `_ttx`. The operator account needs no rules.
   Do not run the harness as root.
   Example rules:
 
@@ -175,10 +173,11 @@ Safety is first-class, not optional.
   No flag can turn this off.
 
 - **Audit.** The parent appends each prompt, tool call, executed command, exit status,
-  and confirmation to `/var/log/ttx/audit.log`. Each confirmation entry records the
-  peer user id and the digest. `rc.d` starts `ttxd` as root.
-  The parent opens the log in append-only mode, binds the control socket, and then
-  drops to `_ttx`. After the drop, no `ttxd` process runs as root.
+  and confirmation to `/var/log/ttx/audit.log`. Each confirmation entry records the peer
+  user id and the digest.
+  `rc.d` starts `ttxd` as root.
+  The parent opens the log in append-only mode, binds the control socket, and then drops
+  to `_ttx`. After the drop, no `ttxd` process runs as root.
 
 ## Model fetch
 
@@ -189,8 +188,9 @@ loads. No TLS library dependency enters the harness.
 ## Package
 
 The harness ships as an OpenBSD port, `sysutils/ttx`. The port skeleton lives in the
-repository. The port installs `ttxd` and `ttx`. It creates the `_ttx` user, the
-`_ttxllm` user, and the `ttxop` group.
-It includes two `rc.d` scripts: one runs `llama-server` with the TTX model, and one
-runs `ttxd`. Weights do not ship in the package.
+repository.
+The port installs `ttxd` and `ttx`. It creates the `_ttx` user, the `_ttxllm`
+user, and the `ttxop` group.
+It includes two `rc.d` scripts: one runs `llama-server` with the TTX model, and one runs
+`ttxd`. Weights do not ship in the package.
 `ttx fetch` downloads the models separately.
