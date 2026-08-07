@@ -141,7 +141,7 @@ required argument, or a bad value raises a validation error with exact text, for
 example: `Missing required argument "command" in tool call`. An unknown tool name
 raises its own error. The controller catches these and posts an `ErrorObservation`
 with the exact error text into the stream; the observation returns to the model on
-the next step. The re-prompt count is not bounded by itself; only the iteration
+the next step. No dedicated counter bounds the re-prompt count; only the iteration
 limit and the stuck detector bound it.
 
 One LLM response can contain several tool calls. All parse into a list, and the
@@ -161,8 +161,9 @@ The event stream is the audit trail. `EventStream.add_event` serializes every ev
 to JSON and writes one file per event id, plus 25-event cache pages for fast reads.
 The serialized form has fixed top keys: `id`, `timestamp`, `source`
 (user/agent/environment), `cause`, the action or observation name, the arguments or
-content, tool-call metadata, and LLM metrics. Known secret values are masked with
-`<secret_hidden>` before write. An event over 1 MB logs a warning.
+content, tool-call metadata, and LLM metrics. `EventStream.add_event` masks known
+secret values with `<secret_hidden>` before it writes. An event over 1 MB logs a
+warning.
 
 Token accounting: a metrics object records per-call cost, latency, and token usage
 with accumulated totals, and a trimmed copy attaches to every action event, so cost

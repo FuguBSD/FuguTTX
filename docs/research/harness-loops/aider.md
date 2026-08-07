@@ -110,7 +110,7 @@ loop as text, not a plugin system.
 
 All traffic goes through litellm as OpenAI chat completions. Temperature defaults
 to 0. The HTTP timeout is 600 s. Streaming is the default. Retry backoff starts at
-0.125 s and doubles; past 60 s total it stops. Context-window overflow never
+0.125 s and doubles; when the delay exceeds 60 s, it stops. Context-window overflow never
 retries; it takes a diagnostic path that itemizes system, history, repo-map, and
 file tokens and suggests `/drop` or `/clear`.
 
@@ -152,8 +152,10 @@ re-maps paths; it does not detect match failures. The real apply writes each
 matching block as it iterates, auto-commits the passing blocks, and only afterward
 raises an error for the failures. The reflection text says which blocks were
 applied and tells the model not to re-send them. Git undo is the recovery
-mechanism. A design that requires reply-level atomicity — as the ttx confirmation
-protocol does — is stricter than aider, and it must be presented as a deliberate
+mechanism. A design that requires action-level atomicity — as the ttx confirmation
+protocol does: each mutation gates individually behind its own dry run, digest,
+and confirmation, and a confirmed action installs whole or not at all — is
+stricter than aider. The specification must present this rule as a deliberate
 divergence, not as a copy.
 
 The per-path gate is real: creating a new file, or editing a file not in the chat,
@@ -183,15 +185,15 @@ Token and cost accounting reads provider usage fields (with cache tokens) and
 prints per-message and cumulative totals, which survive mode switches.
 
 Integrity trail, with a correction from the verification pass: aider hashes every
-request and response with SHA-1, but the request hash is computed before the
-messages are added to the request, so it covers only the parameters, not the prompt
-content. Do not copy it as a confirmation-digest primitive; the ttx digest must
+request and response with SHA-1, but it computes the request hash before it adds
+the messages to the request, so the hash covers only the parameters, not the
+prompt content. Do not copy it as a confirmation-digest primitive; the ttx digest must
 cover the full content, as the spec already requires.
 
 In-memory state splits into the active exchange and the done history. After a
-successful edit-and-commit, the exchange moves into history and can be replaced by
-a two-line stub ("I committed hash x", "Ok.") — full file bodies are not kept in
-history, because the files chunk re-sends fresh content every turn. Durable state
+successful edit-and-commit, the exchange moves into history, and aider can replace
+it with a two-line stub ("I committed hash x", "Ok."). History keeps no full file
+bodies, because the files chunk re-sends fresh content every turn. Durable state
 lives in git. There is no JSON session file, no message ids, and no exact replay.
 
 ## 8. Errors and limits
@@ -201,8 +203,8 @@ backoff capped at 60 s, one 600 s HTTP timeout, a pre-send token check behind a
 confirmation, and a warning at 4+ files or 20k+ tokens of chat files. There is no
 repetition detector and no per-session call budget. Inference: the human-in-the-loop
 REPL is the real loop guard; aider can afford weak guards only because a human
-reads every reply. ttx runs actions autonomously between confirmations, so it must
-keep its own fixed budgets.
+reads every reply. The harness executes actions autonomously between
+confirmations, so it must keep its own fixed budgets.
 
 Cancellation: Ctrl-C during a stream annotates the history — the user message gets
 "^C KeyboardInterrupt" and an assistant line "I see that you interrupted my
@@ -227,7 +229,7 @@ previous reply." — so the model does not treat the truncated reply as accepted
    Aider wrote the fuzzy fallback and then disabled it. ttx must spend its one
    re-prompt instead of silently repairing arguments.
 6. Note the corrected atomicity fact: aider applies passing blocks and reflects
-   the failures, with git as the undo layer. ttx requires reply-level atomicity
+   the failures, with git as the undo layer. ttx requires action-level atomicity
    through its confirmation digest. Keep that stricter rule; it is a divergence
    from aider, chosen because a sysadmin mutation has no `git undo`.
 7. Compact history with the model against a small budget: verbatim tail of about

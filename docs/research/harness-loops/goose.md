@@ -34,8 +34,8 @@ compaction check. `reply_internal` is one async generator that yields agent even
 The outer loop does, in order: check the cancellation token; drain queued "steer"
 user messages; check the final-output tool; count the turn; stop when the turn
 count passes `max_turns` (default 1,000) with a fixed "may I continue" message;
-call the provider; consume the response stream. Tool requests get categorized,
-inspected, approved, and executed; tool results become user-role messages. The
+call the provider; consume the response stream. The loop categorizes, inspects,
+approves, and executes tool requests; tool results become user-role messages. The
 loop stops when the model returns text with no tool calls, subject to overrides
 (goal nudges, recipe retry logic, a Stop hook that can deny exit up to a cap).
 Subagents are tools: a subagent builds a fresh agent from a recipe, runs the same
@@ -131,8 +131,8 @@ digest that binds the exact argument vector (see the index).
 ## 6. Tool calls
 
 Tools are MCP tools with JSON schemas, namespaced `extension__tool`, normalized and
-sorted by name. An unparseable tool call is stored in history as a placeholder
-valid call named `unparseable_tool_call`, and the parse error rides on the paired
+sorted by name. goose stores an unparseable tool call in history as a placeholder
+valid call named `unparseable_tool_call`. The parse error rides on the paired
 tool response, so the model can correct its arguments and every provider formatter
 sees a well-formed pair.
 

@@ -96,7 +96,11 @@ model-visible input, not only the output.
 ## 7. Mapping to ttx
 
 Inference. One append-only JSONL per session under `/var/log/ttx` matches the
-Codex/Pi/Claude Code pattern and works with a Perl append plus `JSON::PP`.
+Codex/Pi/Claude Code pattern and works with a Perl append plus `JSON::PP`. This
+layout is a candidate spec change: the spec fixes the audit log as one file,
+`/var/log/ttx/audit.log`, in the parent's unveil enumeration, so a per-session
+file layout changes the audit section and the unveil table (see the index,
+section 7).
 Length-prefixed JSON events to the client match the Codex `Event{id, msg}` shape
 at a coarser granularity; a synchronous CPU model needs no streaming deltas.
 Syslog duplication mirrors the Claude Code split: the transcript holds full
@@ -106,9 +110,10 @@ and costs one `Digest::SHA` call per record.
 
 ## Takeaways for ttx
 
-1. Write one append-only JSONL file per session, and make it the single source
-   for model-context rebuild, client replay, and audit. Codex, Pi, and Claude
-   Code all prove one file can serve all three consumers.
+1. One append-only JSONL file per session can serve as the single source for
+   model-context rebuild, client replay, and audit. Codex, Pi, and Claude Code
+   all prove one file can serve all three consumers. The per-session layout is
+   a candidate spec change (see section 7 above and the index).
 2. Give every record a fixed envelope: timestamp, monotonic ordinal, type,
    payload. For a synchronous one-session harness, an integer ordinal is simpler
    than Pi's id/parent tree and still supports resume.

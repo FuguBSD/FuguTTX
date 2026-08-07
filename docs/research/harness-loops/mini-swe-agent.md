@@ -100,7 +100,7 @@ SWE-agent has a real extension mechanism: tool bundles. A bundle is a directory
 with a `config.yaml` that describes each command (signature, docstring, typed
 arguments) and a `bin/` directory of plain executables. The harness generates the
 model-facing tool documentation from the metadata. This is the portable idea: the
-ttx fixed-function wrappers are exactly bundle `bin/` programs, and a small static
+ttx fixed-function wrappers are exactly bundle `bin/` programs. A small static
 metadata table per wrapper can generate the tool section of the system prompt, so
 the harness and the prompt cannot drift.
 
@@ -189,7 +189,7 @@ SWE-agent adds: `max_requeries` 3 shared across format errors, blocked actions, 
 syntax errors; a total execution timeout of 1,800 s; a cap of 3 consecutive command
 timeouts; and per-instance cost and call limits. Its distinctive move is graceful
 degradation: almost every terminal error routes through an auto-submission path
-that extracts a `git diff` even when the runtime has died, so a crashed run still
+that extracts a `git diff` even when the runtime has died. A crashed run still
 yields a typed exit status and a candidate patch.
 
 Neither project detects a repeated identical action or degenerate output beyond the

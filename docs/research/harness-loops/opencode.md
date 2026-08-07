@@ -40,10 +40,11 @@ queuing mechanism.
    derives the compacted view.
 3. Compute the latest user message, the latest assistant message, and pending
    "task" parts.
-4. Test the exit condition. Corrected by the verification pass, the precise rule
-   is: break only when the last assistant message contains zero client-executed
-   tool parts (provider-executed and orphaned-interrupted parts excluded), and
-   its finish reason is not "tool-calls", and it answers the last user message.
+4. Test the exit condition. The verification pass corrected this rule. The loop
+   breaks only when three conditions hold: the last assistant message contains
+   zero client-executed tool parts (provider-executed and orphaned-interrupted
+   parts excluded); its finish reason is not "tool-calls"; and it answers the
+   last user message.
    A completed tool part still keeps the loop running, because the results must
    go back to the model on the next iteration. A source comment notes some
    providers return "stop" while tool calls are present, so the structural check
@@ -70,9 +71,9 @@ aborted error and mark running tool parts interrupted.
 
 Assembly happens on every loop iteration.
 
-The base prompt is selected from a per-model prompt table by model-id substring:
-one static prompt file per model family (anthropic, gpt, codex, gemini, kimi, and
-so on, else a default). An agent-level prompt replaces the base prompt entirely.
+opencode selects the base prompt from a per-model prompt table by model-id
+substring: one static prompt file per model family (anthropic, gpt, codex,
+gemini, kimi, and so on, else a default). An agent-level prompt replaces the base prompt entirely.
 This per-model prompt table is a direct precedent for tuning one prompt to one
 small model. An environment block emits the model id, working directory, git
 state, platform, and date inside `<env>` tags.
@@ -118,11 +119,11 @@ the user cancels. ttx must not copy the uncapped retry.
 
 Context management: usable context is the input limit minus a reserve
 (`min(20000, maxOutputTokens)`). Overflow marks the stream for compaction.
-Compaction runs as a hidden agent with zero tools: the history is serialized to
-plain text (`[User]: ...`, `[Assistant tool call]: name(json)`,
-`[Tool result]: ...`) with tool outputs capped at 2,000 characters, a previous
-summary threads in, and a tail of the last 2 turns is preserved within a budget of
-25 percent of usable context, clamped to 2,000–8,000 tokens. The summary is stored
+Compaction runs as a hidden agent with zero tools. The compactor serializes the
+history to plain text (`[User]: ...`, `[Assistant tool call]: name(json)`,
+`[Tool result]: ...`) and caps tool outputs at 2,000 characters. A previous
+summary threads in. The compactor preserves a tail of the last 2 turns, within a
+budget of 25 percent of usable context, clamped to 2,000–8,000 tokens. The summary is stored
 as a normal assistant message flagged as a summary, and the visible window is
 derived at read time — full history stays auditable. A prune pass marks old tool
 outputs compacted instead of deleting them, protects the newest 40,000 tokens, and
@@ -156,7 +157,7 @@ Permission gate: rules are (permission, pattern, action) triples with wildcard
 match; the last matching rule wins; a deny rule fails immediately (deny beats
 ask); the default action is ask. An ask suspends the tool until a client replies
 once, always, or reject over HTTP. A reject can carry a correction message that
-becomes model-visible feedback, and it cascades to all pending asks in the
+becomes model-visible feedback. The rejection cascades to all pending asks in the
 session.
 
 Doom-loop guard: three consecutive tool calls with the same name and

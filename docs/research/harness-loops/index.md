@@ -11,7 +11,7 @@ Method: eight open-source harnesses, one research pass per harness against a
 shallow clone of the exact cited commit, then one independent adversarial
 verification pass per harness against the same source. Two cross-cutting surveys
 (instruction conventions, observability) and one completeness critique complete
-the set. Refuted and imprecise claims are corrected in the per-harness notes.
+the set. The per-harness notes correct refuted and imprecise claims.
 
 ## 1. The research set
 
@@ -59,8 +59,9 @@ strongest evidence this research produces.
    derive model context, resume, replay, and audit from one append-only record
    stream. The two harnesses that chose mutable SQLite (goose, opencode) still
    never delete: they mark records invisible and derive the model window at read
-   time. For ttx: one JSONL transcript per session is the audit log, the resume
-   store, and the context source, with `JSON::PP` alone.
+   time. For ttx: one JSONL transcript per session can serve as the audit log,
+   the resume store, and the context source, with `JSON::PP` alone (a candidate
+   spec change; see section 7).
 2. **Errors return as tool results.** Every harness feeds a malformed or failed
    call back to the model as a normal result with precise text ("Missing
    required argument \"command\""; "unsupported call: NAME"; "The arguments
@@ -82,7 +83,7 @@ strongest evidence this research produces.
 6. **Tool execution is sequential in effect.** OpenHands queues parsed calls and
    returns one per step. Codex drains parallel futures in call order. Pi runs
    its policy preflight sequentially even in parallel mode. mini and smolagents
-   execute in list order. Nothing is lost when ttx executes strictly serially.
+   execute in list order. Nothing is lost when ttxd executes strictly serially.
 
 ## 4. Findings by dimension
 
@@ -124,14 +125,16 @@ Codex, goose) reduce, for ttx, to policy functions the parent already owns.
 
 ### 4.4 LLM invocation
 
-One blocking POST per turn with no streaming is exactly mini's shape and fits
-`HTTP::Tiny`. Transport retry belongs between the loop and the server, per
+One blocking request per turn with no streaming is exactly mini's shape, and it
+fits the model process's one persistent HTTP/1.1 connection (`HTTP::Tiny` serves
+setup only; the model process speaks HTTP/1.1 itself after the pledge, per
+`spec/harness.md`). Transport retry belongs between the loop and the server, per
 request, small and bounded (goose: 3 with backoff; Pi app layer: 3; opencode's
 uncapped retry is the anti-pattern). Temperature 0 is the common default for
 tool-driven turns. Prompt-cache discipline matters more for ttx than for any
-surveyed harness, because CPU prompt reprocessing is the slow axis: sort the tool
-list, avoid timestamps finer than the hour, keep the prompt prefix byte-stable,
-and append rather than rewrite (goose, opencode, aider's fixed chunk order).
+surveyed harness, because CPU prompt reprocessing is the slow axis. Sort the tool
+list. Avoid timestamps finer than the hour. Keep the prompt prefix byte-stable.
+Append rather than rewrite (goose, opencode, aider's fixed chunk order).
 
 Codex is a negative result: it speaks only the OpenAI Responses API now, so its
 wire protocol cannot serve llama-server. ttx keeps the chat-completions shape.
@@ -171,15 +174,17 @@ The OTel `gen_ai.*` vocabulary maps onto syslog key=value pairs without OTLP.
 The set's budgets vary by three orders of magnitude (mini: 0-off defaults with
 a 3-error counter; smolagents: 20 steps; goose: 1,000 turns; Pi and Codex: none).
 The pattern behind the variance: harnesses with an interactive human afford weak
-guards; harnesses meant for unattended runs need hard ones. ttx runs autonomously
-between confirmations with a small model, so it sits at the strict end — the
-spec's fixed budgets are correct and stricter than most of the set by design.
+guards; harnesses meant for unattended runs need hard ones. The TTX agent runs
+autonomously between confirmations with a small model, so it sits at the strict
+end — the spec's fixed budgets are correct and stricter than most of the set by
+design.
 
-Three guards recur and are missing from the ttx spec today (candidate spec
-additions, flagged in section 7): the empty-response retry cap (goose: 3), the
-identical-consecutive-call guard (opencode threshold 3; goose repetition
-inspector; OpenHands stuck detector; absent from mini, smolagents, aider, Pi —
-and most needed for a small model), and the length-stop guard (Pi).
+Three guards recur, and the ttx spec omits them today (candidate spec additions,
+flagged in section 7). The first is the empty-response retry cap (goose: 3). The
+second is the identical-consecutive-call guard (opencode threshold 3; goose
+repetition inspector; OpenHands stuck detector). This guard is absent from mini,
+smolagents, aider, and Pi, and a small model needs it most. The third is the
+length-stop guard (Pi).
 
 The "fatal versus feed-back" split (smolagents) is the cleanest error taxonomy:
 a harness or transport failure aborts the step; model misbehavior becomes an
@@ -265,7 +270,7 @@ be validated against the fine-tuned model in evaluation:
 | Tool calls per prompt | budget checked before each model call | spec; smolagents 20, goose 1,000 | 20–1,000 | low tens |
 | Malformed call | error-as-result, then stop | spec; mini 3, aider 3 | 1–3 | 1 (spec) |
 | Empty response | retry then fixed message | goose | 3 | 1–2 (spec addition) |
-| Repetition guard | identical consecutive call cap | opencode, goose | 3 | 2–3 (spec addition) |
+| Repetition guard | identical consecutive call cap | opencode | 3 (goose: configurable, value not surveyed) | 2–3 (spec addition) |
 | Transport retry | bounded backoff between loop and server | goose, Pi | 3 × exponential | 2–3, bounded |
 | HTTP timeout | fixed, must exceed worst-case generation | spec | 600 s common | size from measured tokens/s × max output tokens, plus prompt processing |
 
@@ -278,9 +283,10 @@ flags, and does not make, these changes:
 1. **Spool directory.** Spill-to-file truncation (goose, opencode) needs a new
    path in the parent's unveil enumeration and a statement of its mode and
    owner.
-2. **Termination contract under the grammar.** The spec's loop ends when the
-   model stops calling tools, but a grammar that forces a tool call every turn
-   makes that unreachable. The grammar and the stop condition must be designed
+2. **Termination contract under the grammar.** The spec does not yet state when
+   the loop ends. The natural contract — the loop ends when the model stops
+   calling tools — becomes unreachable under a grammar that forces a tool call
+   every turn. The project must design the grammar and the stop condition
    jointly — for example, a terminal `report` tool in the schema (the
    smolagents `final_answer` pattern), or a grammar that permits a no-call
    reply. This is a design decision the spec must record.
@@ -291,6 +297,11 @@ flags, and does not make, these changes:
 4. **Raw wire log.** The forensic request log (section 4.6) holds everything
    the model saw and needs the audit-confidentiality treatment the spec already
    defines for the audit log.
+5. **Per-session transcript.** The spec fixes the audit log as one file,
+   `/var/log/ttx/audit.log`, in the parent's unveil enumeration. A JSONL
+   transcript file per session (sections 3.1 and 4.6) replaces or extends that
+   layout, so it changes the audit section and the unveil enumeration, and the
+   change must state the directory's mode and owner.
 
 ## 8. Gaps: what this research cannot answer
 
@@ -312,7 +323,8 @@ They are the next research or design tasks.
    processes, `alarm()` around a blocked read, killing a tool's process group,
    and whether an in-flight llama-server request can be cancelled. The set only
    documents async machinery ttx avoids.
-4. **Harness/fine-tune co-design.** TTX 1 is an SFT fine-tune (decision D4).
+4. **Harness/fine-tune co-design.** TTX 1 trains with CPT, then SFT (decision
+   D4), and the SFT traces teach tool use.
    The system prompt, tool schemas, error templates, and re-prompt wording are
    training-time artifacts that must match the synthetic trace generator. All
    surveyed harnesses treat the model as fixed and external. Keeping harness
@@ -327,11 +339,14 @@ They are the next research or design tasks.
    configs, and dmesg — attacker-influenceable text — back into the model
    context. The spec covers sanitization toward the operator display; no
    surveyed harness fences tool output toward the model. Open design question.
-7. **Operator liveness.** Without streaming, at 20–30 tokens/s, the client
-   shows nothing during a long generation. The observability research covers
-   logs and replay, not progress signaling. A coarse per-turn event ("model
-   thinking", "running pfctl") over the control socket is the likely answer;
-   the fixed HTTP timeout must exceed worst-case generation time either way.
+7. **Operator liveness.** The spec's frontend relays streamed output, but with
+   one blocking request on the model leg (section 4.4) the harness has nothing
+   to relay during a long generation. Generation runs at or below the bandwidth
+   ceilings of 23.6–31.2 tokens/s on M1/M2 (`spec/inference.md`; no measured
+   OpenBSD figure exists). The observability research covers logs and replay,
+   not progress signaling. A coarse per-turn event ("model thinking", "running
+   pfctl") over the control socket is the likely answer; the fixed HTTP timeout
+   must exceed worst-case generation time either way.
 8. **Audit-file mechanics.** Append atomicity (torn JSONL lines on crash),
    fsync policy, and `newsyslog` rotation interplay with any `prev_sha256`
    chaining are not covered by prior art; no surveyed harness chains its log.

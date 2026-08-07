@@ -135,8 +135,8 @@ bare library layer defaults retries off. An abort never retries.
 
 Compaction: auto-compaction triggers when the context tokens exceed the context
 window minus a reserve (default 16,384 tokens). It keeps the newest ~20,000 tokens.
-It cuts only at a user, assistant, or summary message, never at a tool result; a cut
-can split a turn. The summary is structured markdown (Goal, Progress, Next Steps,
+It cuts only at a user, assistant, bash-execution, or summary message, never at a
+tool result; a cut can split a turn. The summary is structured markdown (Goal, Progress, Next Steps,
 file lists). Tool results truncate to 2,000 characters inside the summarization
 prompt. Compaction calls opt out of the prompt cache.
 

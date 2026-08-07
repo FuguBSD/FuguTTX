@@ -124,10 +124,10 @@ Two dispatch paths:
   typed error. Multiple calls in one turn run in a thread pool, and results
   re-order by call id when written to memory.
 
-Malformed-call recovery is uniform: parsing, tool-call, and execution errors are
-caught by the loop, stored in the step's `error` field, and replayed next turn as a
-tool-response message: "Error: ... Now let's retry: take care not to repeat
-previous errors!". Each retry consumes one normal step from `max_steps`; no
+Malformed-call recovery is uniform: the loop catches parsing, tool-call, and
+execution errors, stores them in the step's `error` field, and replays them next
+turn as a tool-response message: "Error: ... Now let's retry: take care not to
+repeat previous errors!". Each retry consumes one normal step from `max_steps`; no
 separate re-prompt budget exists. There are no approval or permission gates
 anywhere in the loop.
 

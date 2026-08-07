@@ -43,10 +43,10 @@ context (tools, environment, MCP servers for this request); clone history into t
 prompt input; run the sampling request; then compute
 `needs_follow_up = tool call seen || pending input`. If the token limit is reached
 and follow-up is needed, run inline auto-compaction and continue. If no follow-up
-is needed, run the stop hooks; a stop hook can block completion and inject a new
-prompt message, which continues the loop — with a one-shot flag that prevents an
-infinite stop-hook loop, and a fail-open guard: a hook that blocks without a
-continuation prompt is ignored with a warning. Exit paths: normal completion (the
+is needed, run the stop hooks. A stop hook can block completion and inject a new
+prompt message, which continues the loop. A one-shot flag prevents an infinite
+stop-hook loop. A fail-open guard applies: the loop ignores a hook that blocks
+without a continuation prompt, and it logs a warning. Exit paths: normal completion (the
 turn's product is one string, the last agent message); a non-retryable error
 (emit an error event, break, the session stays usable); or cancellation (a token
 fires, and an interrupted-turn marker is written into history so the model sees
@@ -67,8 +67,8 @@ under one total byte budget (`project_doc_max_bytes`, default 32 KiB); truncate 
 file that crosses the budget and log a warning. A user-level file in `$CODEX_HOME`
 joins with the separator `--- project-doc ---`.
 
-The result is injected as a user-instructions context message, not into the system
-prompt — which keeps the system prompt stable for prompt caching. A manager caches
+Codex injects the result as a user-instructions context message, not into the
+system prompt. This choice keeps the system prompt stable for prompt caching. A manager caches
 the loaded set and re-reads only when the cwd selection changes, not on every
 turn. Additional layered context arrives as typed "contextual user fragments":
 environment context, permission instructions, current-time reminders, token-budget
