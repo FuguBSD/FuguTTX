@@ -51,6 +51,14 @@ A judge filter removes incorrect and unsafe traces before they enter the trainin
 Traces contain no thinking blocks.
 Traces target 8K tokens or less, to match the inference context budget.
 
+The harness format and the training format must not drift.
+The system prompt, the tool schemas, the error templates, and the re-prompt texts are
+shared artifacts, defined once in the repository.
+`ttx-synth` must read them from the same source as the harness ([harness](harness.md)).
+Each trace must end its step with the terminal `report` tool.
+The trace set must include recovery examples: a malformed call, its precise error
+result, and the corrected call.
+
 ### Execution
 
 Training runs in the published Axolotl CUDA Docker image on the instance.
