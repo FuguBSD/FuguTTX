@@ -11,7 +11,9 @@ license, strong tool-call ability, good C and Perl code ability, long context, a
 fine-tune ecosystem support.
 Llama 3.x and Gemma 3 have custom licenses that are not OSI-approved.
 Those licenses do not agree with the permissive-only culture of OpenBSD. Those models
-are excluded. Details: [base model](model.md).
+are excluded. The family line has revisions.
+Phase 2 re-surveys the line and pins the exact revision, before any training spend.
+Details: [base model](model.md).
 
 ## D2 — Inference: the `misc/llama.cpp` port, CPU only
 
@@ -50,9 +52,14 @@ Details: [training](training.md), [infrastructure](infrastructure.md).
 CPT on the OpenBSD corpus adds vocabulary and idioms.
 SFT on synthetic agentic traces teaches tool use.
 Replay data and a low learning rate prevent catastrophic forgetting.
-A Qwen3-32B teacher generates the traces.
+A Qwen3-32B teacher proposes the traces.
+A rollout in a disposable OpenBSD guest records each tool result, so no observation in a
+trace is fabricated.
 A judge filter removes bad traces before use.
-Details: [training](training.md).
+The judge that grades a release bar is a different model family than the teacher
+([evaluation](evaluation.md)). Each training stage measures against the baseline grid,
+so training must beat retrieval before it ships ([evaluation](evaluation.md)). Details:
+[training](training.md).
 
 ## D5 — Variants are personas, and evaluation promotes them
 

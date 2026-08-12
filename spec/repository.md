@@ -20,7 +20,7 @@ The boundary is where the code runs.
 | Task runner | `just` | One polyglot entry point for Python, Perl, and OpenTofu. |
 | Format and lint | Ruff for Python, flowmark for Markdown | One formatter per language. flowmark makes semantic line breaks: one sentence per line. This agrees with the ASD-STE100 writing standard and keeps diffs small. |
 | Inference runtime | llama.cpp everywhere | The same runtime serves development (Metal on Apple Silicon) and production (OpenBSD CPU). What is validated is what ships. |
-| Teacher/judge model | Qwen3-32B (Apache 2.0), served by vLLM on the H100 | Clean license provenance for synthetic data. One deployment generates traces and grades evaluations. |
+| Teacher/judge model | Qwen3-32B teacher (Apache 2.0), served by vLLM on the H100; a release judge from a different model family | Clean license provenance for synthetic data. The teacher proposes and filters traces. A judge outside the Qwen family grades each release bar ([evaluation](evaluation.md)). |
 | CI | GitHub Actions | The repository and the corpus mirrors are on GitHub. CI validates each push, and it operates the pipeline with the scoped pipeline credential ([infrastructure](infrastructure.md)). |
 
 ## Layout
@@ -50,12 +50,13 @@ fuguttx/
 │   ├── libexec/                 #   fixed-function doas target wrappers (C, libc only)
 │   ├── t/                       #   prove(1) tests
 │   └── port/                    #   OpenBSD port skeleton (Makefile, PLIST, DESCR, rc.d)
-├── infra/                       # OpenTofu for Scaleway (modules/, persistent/, dev/, train/)
+├── infra/                       # OpenTofu for Scaleway (modules/, persistent/, dev/, train/, image/)
 ├── datasets/                    # dataset cards + manifests (not raw data)
 ├── models/                      # model cards + release manifests (GGUF via object storage/HF)
 ├── docs/                        # corpus/licensing notes, runbooks, research notes
 │   ├── runbooks/                #   bootstrap, training campaign, release
 │   └── research/                #   dated research notes with sources
+├── scripts/                     # repository checks (Python, standard library only)
 └── .github/workflows/           # CI
 ```
 
@@ -75,9 +76,16 @@ GitHub Actions runs two kinds of workflows.
 Validation, on each push, with no cloud credentials:
 
 - Python packages: ruff and pytest.
-- Markdown documents: `flowmark --check`.
+- Markdown documents: `flowmark --check`, and the cross-reference check
+  (`just spec-check`). The check verifies each internal link and each anchor, and it
+  verifies that `spec/index.md` lists each specification document.
+  A reference between the specification and the code must not rot silently.
 - Harness body: `perl -c`, `prove`, taint mode, the no-CPAN-dependency check, and the
   execution-discipline check (list-form exec, three-argument open, no backticks).
+  A Linux runner has no `OpenBSD::Pledge` and no `OpenBSD::Unveil`. No-op shims under
+  `harness/t/lib/` stand in for both modules, so `perl -c` and `prove` run on any
+  runner. The shims live in the test tree only, and they never ship.
+  Pledge and unveil behavior is verified on OpenBSD guests, on the development host.
 - doas wrappers: compile with the base toolchain, and `lint`.
 - Infrastructure: `tofu fmt -check` and `tofu validate`.
 - Training: Axolotl configuration validation.

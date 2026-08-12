@@ -76,6 +76,26 @@ Pro has a specification peak of 200 GB/s, and no measured figure exists for it.
 A change of target machine therefore gains more than a GPU can, and it needs no new
 code.
 
+### Latency budget
+
+Tokens/s alone does not bound the user experience.
+An agentic step ingests tool output on each turn, and CPU prompt processing is the slow
+axis. A generation ceiling can hold while a task still takes too long.
+An end-to-end budget therefore governs:
+
+- **The reference task** is one agentic scenario from the evaluation suite: “Block
+  inbound SSH, except from 10.0.0.0/8, in pf.conf,” up to the confirmation prompt.
+- **The budget:** the reference task must complete in **5 minutes or less** on the M1
+  reference machine, at Q4_K_M, through the harness.
+- Phase 2 measures full agent turns: prompt processing, generation, and tool time, per
+  turn and per task ([roadmap](roadmap.md)). `llama-bench` numbers do not substitute for
+  a full-turn measurement.
+- The budget is a pre-registered release bar ([evaluation](evaluation.md)). The HTTP
+  timeout of the harness derives from the same measurements ([harness](harness.md)).
+
+The budget is a starting value.
+Only a human changes it, with a recorded reason, before a measurement runs.
+
 ### aarch64 build defect
 
 The OpenBSD aarch64 package of `devel/libggml` is not tuned for the target CPU. The port

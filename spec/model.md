@@ -22,6 +22,21 @@ The base model must have all of these properties:
   This is sufficient for sysadmin tasks with retrieved man-page context.
 - **Ecosystem:** first-class support in Axolotl, HF TRL, and llama.cpp.
 
+## Revision pin and re-survey
+
+“Qwen3-4B” names a family line, and the line has revisions.
+The 2507 refresh split the hybrid model into two revisions: Qwen3-4B-Instruct-2507 and
+Qwen3-4B-Thinking-2507, both Apache 2.0. The Instruct revision is natively non-thinking,
+it raises the context length, and it reports stronger agentic and tool-call scores than
+the original hybrid in non-thinking mode.
+That is exactly the TTX 1 configuration, so **Qwen3-4B-Instruct-2507 is the leading
+candidate revision**.
+
+Phase 2 re-surveys the Qwen line and pins the exact revision ([roadmap](roadmap.md)).
+The training configuration records the revision name and the weight hash.
+Model facts in this document show the state at the time of publication.
+Confirm them at the re-survey.
+
 ## Excluded models
 
 - **Llama 3.x:** a custom license with a 700M monthly-active-user clause, plus name and
@@ -33,19 +48,23 @@ They do not agree with the permissive-only culture of OpenBSD.
 
 ## Escalation rule
 
-TTX 1 can fail the Phase 4 agentic evaluation bar after reasonable iteration on data and
-hyperparameters. If it does, change the base to **Qwen3-8B**. Qwen3-8B has the same
-license and 128K context.
-Its CPU speed is approximately half of the 4B speed.
+TTX 1 can fail the [release bars](evaluation.md#release-bars) after reasonable iteration
+on data and hyperparameters.
+If it does, change the base to **Qwen3-8B**. Qwen3-8B has the same license and 128K
+context. Its CPU speed is approximately half of the 4B speed.
 The pipeline is size-agnostic.
 Only the configurations change.
 
 ## Thinking mode
 
-The Qwen3 thinking mode stays **off** for TTX 1. At CPU token rates, long reasoning
-chains make interactive latency too high.
+TTX 1 runs **without** thinking.
+At CPU token rates, long reasoning chains make interactive latency too high.
 SFT traces contain no thinking blocks.
 The harness requests non-thinking completions.
+A hybrid base revision fights this configuration, because its non-thinking mode is the
+weaker of its two modes.
+A natively non-thinking revision removes that mismatch (see
+[Revision pin and re-survey](#revision-pin-and-re-survey)).
 
 ## Fallback models
 
