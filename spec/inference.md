@@ -10,6 +10,12 @@ It builds on twelve architectures: aarch64, alpha, amd64, arm, hppa, i386, mips6
 mips64el, powerpc, powerpc64, riscv64, and sparc64. Dependencies: `devel/libggml`,
 `net/curl`, `cmake`, `ninja`. Upstream has the MIT license, with `PERMIT_PACKAGE = Yes`.
 
+`llama-server` serves the agent with three settings that the harness requires: the
+JSON-schema/grammar constraint on tool calls, prompt caching for a byte-stable prefix,
+and context shift off.
+The [harness](harness.md) states the reasons.
+Phase 6 validates the exact flags ([roadmap](roadmap.md)).
+
 `devel/libggml` sets `-DGGML_VULKAN=on` for amd64 and aarch64. The aarch64 package
 therefore installs a Vulkan back end, `libggml-vulkan.so`. On Apple Silicon that back
 end loads, the Vulkan loader enumerates no device, and inference runs on the CPU. The

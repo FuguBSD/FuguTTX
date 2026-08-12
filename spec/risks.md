@@ -8,6 +8,19 @@ pledge/unveil, and the safety red team ([harness](harness.md),
 [evaluation](evaluation.md)). Unattended execution of destructive actions is not
 possible — by design, not by policy.
 
+## Prompt injection through tool output
+
+A sysadmin agent feeds logs, configuration files, and `dmesg` output back into the model
+context as tool results.
+An attacker can influence that text, and an injected instruction can steer the next tool
+call. Mitigations: the fixed tool table bounds what a steered model can request; the
+parent applies every gate, whatever the model claims; a mutation needs a dry run and a
+human confirmation ([harness](harness.md)). No surveyed harness fences tool output
+toward the model, so no proven pattern exists
+([research](../docs/research/harness-loops/index.md)). The residual risk stands.
+The safety red team must include injected-observation scenarios
+([evaluation](evaluation.md)).
+
 ## Corpus staleness versus `-current`
 
 OpenBSD moves fast. A model trained on a snapshot drifts from `-current`. Mitigations:

@@ -72,15 +72,19 @@ support. Thus model output is parseable by construction.
 `JSON::PP` validates it again, under a fixed nesting depth (`max_depth`) and a fixed
 size (`max_size`). The internal record has a fixed maximum length.
 The HTTP client has a fixed timeout.
-Each prompt has a fixed budget of tool calls.
+Each step has a fixed budget of turns.
 A malformed call gets one re-prompt.
 Then the step stops.
+The [agent loop](#the-agent-loop) section defines the loop, and the
+[failure budgets](#failure-budgets) table defines every recovery path.
+The loop design follows the
+[harness-loop research](../docs/research/harness-loops/index.md).
 
 Three system users divide the components:
 
 | User | Runs | Holds |
 | --- | --- | --- |
-| `_ttx` | `ttxd` | The doas rules, the audit log, the control socket. |
+| `_ttx` | `ttxd` | The doas rules, the session transcripts, the control socket. |
 | `_ttxllm` | `llama-server` | Nothing: no doas rules, no socket, no log. |
 | The operator account | `ttx` | Control-socket access, through the `ttxop` group. |
 
@@ -100,16 +104,16 @@ must not hold `exec`**. Model output is untrusted input.
 
 | Process | Role | pledge, after setup | unveil |
 | --- | --- | --- | --- |
-| Parent (engine) | Policy, tool execution, audit | `stdio rpath wpath cpath proc exec` | the diagnostic binaries (x), the doas wrappers (x), `/usr/bin/doas` (x), the candidate directory (rwc), the `ttxd` binary (x), the audit log (w), `/etc` (r) |
+| Parent (engine) | Policy, tool execution, audit | `stdio rpath wpath cpath proc exec` | the diagnostic binaries (x), the doas wrappers (x), `/usr/bin/doas` (x), the candidate directory (rwc), the `ttxd` binary (x), `/var/log/ttx` (rwc), `/etc` (r) |
 | Model process | HTTP to llama-server, JSON parsing | `stdio` | nothing |
 | Frontend process | Control socket, session, confirmations | `stdio unix` | the socket path |
 
-- **The parent** holds the tool policy, executes each command, and writes the audit log.
-  It never sees raw model output.
-  It parses only the fixed internal record format, which the harness itself defines.
-  The unveil row is a complete enumeration: it names each diagnostic binary the parent
-  can run without doas, the doas wrappers, the candidate directory it writes, and the
-  `ttxd` binary it re-executes to respawn a child.
+- **The parent** holds the tool policy, executes each command, and writes the session
+  transcript (see [session transcript](#session-transcript)). It never sees raw model
+  output. It parses only the fixed internal record format, which the harness itself
+  defines. The unveil row is a complete enumeration: it names each diagnostic binary the
+  parent can run without doas, the doas wrappers, the candidate directory it writes, the
+  log directory, and the `ttxd` binary it re-executes to respawn a child.
   The candidate directory is not `/etc`, because `/etc` is read-only to the parent.
 - **The model process** speaks HTTP to `llama-server` and parses model output with
   `JSON::PP`. It reduces each valid tool call to a fixed internal record for the parent.
@@ -123,9 +127,12 @@ must not hold `exec`**. Model output is untrusted input.
   respawns it. The parent treats an abnormal child exit as the respawn trigger.
   The model process has no file system view and no `exec`. An exploited parser bug lands
   in a process that can do nothing and can reach nothing.
+  The model process appends each raw request and each raw response to the wire log,
+  through a descriptor that it inherits from the parent (see
+  [session transcript](#session-transcript)).
 - **The frontend process** owns the control socket and the operator session.
-  It relays prompts, streamed output, and confirmations between the client and the
-  parent.
+  It relays prompts, output, liveness events, and confirmations between the client and
+  the parent (see [Liveness](#liveness)).
 
 The parent starts each child with fork and exec of its own program, with a role flag.
 Each child thus gets a fresh address-space layout.
@@ -155,7 +162,7 @@ For each connection, the frontend reads the peer credentials with `getsockopt(2)
 user id, then the group id, then the process id.
 Base Perl reads it with `getsockopt` and `unpack`, so no compiled module is necessary.
 The field order differs from the Linux `struct ucred`, so do not copy a Linux example.
-The audit log attributes each session and each confirmation to that user id.
+The session transcript attributes each session and each confirmation to that user id.
 
 ## Confirmation protocol
 
@@ -215,6 +222,277 @@ The argument set is finite, so an exact rule is safe here.
   Give a rollback option.
 - `rcctl enable|start|restart`: apply only after a confirmation.
 
+**The terminal tool:**
+
+- `report` ends the step, and it carries the answer of the model to the operator.
+  It executes no command.
+  It is always in the tool table, because the grammar forces a tool call on each turn
+  (see [the agent loop](#the-agent-loop)).
+
+Each tool has one row in a static metadata table.
+The table generates both the tool line of the system prompt and the JSON schema.
+Thus the prompt and the policy cannot drift.
+
+## The agent loop
+
+The parent operates the perceive → plan → act → observe loop as one synchronous
+while-loop. Two terms are fixed:
+
+- A **turn** is one model call plus the execution of its tool call.
+- A **step** is one operator prompt and all of its turns.
+
+Five rules control the loop:
+
+1. **The transcript drives the loop.** The parent appends each event to the session
+   transcript before it acts on the event.
+   At the top of each turn, the parent derives its next action from the transcript.
+   It keeps no loop state outside the transcript.
+   A restarted daemon can therefore resume a session from the transcript alone.
+2. **Budgets are checked before each model call.** The
+   [failure budgets](#failure-budgets) table defines each budget.
+3. **A turn has exactly one tool call.** The llama-server grammar enforces the count.
+   The parent executes tool calls strictly serially.
+   The loop has no subagents, no nesting, and no parallel execution.
+4. **The terminal tool ends the step.** The model ends a step with one `report` call
+   that carries its answer.
+   The grammar forces a tool call on each turn, so a reply without a call cannot end the
+   step. The grammar and the stop condition are therefore one joint design.
+   When the turn budget is exhausted, the harness makes one final model call that
+   permits only the `report` tool.
+   Thus each step ends with a report.
+5. **Errors divide into two classes.** A harness or transport failure is fatal: the step
+   stops, and the operator sees the error.
+   Model misbehavior — a malformed call, an unknown tool, invalid arguments, an empty
+   response, a repeated call — becomes a tool result with precise error text, and it
+   spends budget from the failure table.
+   Model misbehavior must not crash the loop.
+
+### Cancellation
+
+The operator can cancel a step through the client at any time.
+On a cancel, the parent must not start a new model call.
+The parent kills the process group of a running tool.
+The parent appends a synthesized error result for each unanswered tool call.
+Thus no tool call in the transcript lacks a result.
+The abort of an in-flight model generation is open design work in Phase 6
+([roadmap](roadmap.md)): signal routing across the processes, and `alarm()` around a
+blocked read.
+
+### Liveness
+
+CPU generation is slow, and the harness does not stream tokens.
+The frontend therefore relays one coarse event per loop stage to the client: model call
+started, tool started (with the tool name), and confirmation pending.
+These events are transient.
+They do not enter the transcript.
+
+## Model invocation
+
+Each turn makes one blocking chat-completions request.
+The harness does not stream.
+
+- **Sampling.** Temperature 0 for tool-driven turns.
+  This value is a starting point.
+  The evaluation suite validates the sampler settings ([evaluation](evaluation.md)).
+- **Transport retry.** At most 3 retries per request, with exponential backoff (2 s, 4
+  s, 8 s), between the loop and llama-server.
+  Every retry budget must have a cap.
+- **Timeout.** The HTTP timeout is fixed.
+  Its value derives from the Phase 2 measurements: the maximum output tokens divided by
+  the measured tokens/s, plus the prompt-processing time, with margin.
+  Until the measurement exists, the value is 600 s.
+- **Prompt-cache discipline.** CPU prompt processing is the slow axis, and llama-server
+  reuses the KV cache for a byte-stable prefix.
+  The tool list sorts by name.
+  No timestamp in the prompt is finer than the hour.
+  Within a step, the prompt only appends.
+  It never rewrites.
+- **Token budgeting.** The harness must know the prompt size before each send.
+  Base Perl has no tokenizer.
+  The llama-server `/tokenize` endpoint is the candidate mechanism.
+  Phase 6 confirms it ([roadmap](roadmap.md)).
+- **No context shift.** llama-server must run with context shift off.
+  A silent context shift breaks the invariant that the transcript equals the model
+  context, and the audit design depends on that invariant.
+  On overflow, the harness compacts, or it stops with an error (see
+  [context management](#context-management)).
+
+## Prompt assembly
+
+The harness assembles the prompt from a fixed chunk order: the system prompt, the
+operator instruction file, the skill list, and the messages that derive from the
+transcript. A fixed order maximizes prefix-cache reuse.
+
+- **System prompt.** At most 700 tokens: the agent identity, one line per tool from the
+  tool metadata table, and the loop rules.
+- **Operator instruction file.** One file, `/etc/ttx/instructions.md`, with a budget of
+  4,096 bytes. The harness truncates the file at the budget, and it logs a warning.
+  There is no directory walk and no file stacking.
+- **Cadence.** The harness reads the instruction file once per step.
+  The assembled prompt stays byte-stable across the turns of one step.
+- **Lockstep with training.** The system prompt, the tool schemas, the error templates,
+  and the re-prompt texts are training-time artifacts.
+  The SFT trace generator must use the same artifacts ([training](training.md)). A
+  change to one of them is a training-data change, not only a harness change.
+
+## Skills
+
+A skill is a stored procedure for one task, in the published `SKILL.md` convention.
+
+- A skill lives in `/etc/ttx/skills/<name>/SKILL.md`: frontmatter between `---` lines,
+  then a markdown body.
+  The `name` field must match the directory name: lowercase `[a-z0-9-]`, at most 64
+  characters. The `description` field is required, at most 1,024 characters.
+  A base-Perl line parser reads the `key: value` frontmatter.
+  No YAML module is necessary.
+- The system prompt lists only the name and the description of each skill.
+- The trigger is deterministic.
+  The operator invokes a skill by name, or the harness matches an optional frontmatter
+  `triggers` keyword list against the operator prompt.
+  The model must not select skills from a catalog.
+  A 4B model follows a “read the file yourself” instruction weakly.
+- An invocation can carry arguments.
+  The harness substitutes `$ARGUMENTS` and `$1` to `$n` in the body before injection.
+  A skill is thus a reusable runbook.
+- The harness injects the skill body into the step as a context message.
+  The body budget is 4,096 bytes.
+  The harness truncates above it, and it logs a warning.
+
+The instruction file and each skill body are prompt text only.
+The harness must not execute a command that this text names.
+Only a model-proposed tool call, through every gate, reaches execution.
+An instruction file must not become an execution channel.
+
+## Tool-call handling
+
+The grammar constrains model output at sample time.
+Validation still runs in full, because a lying `llama-server` can bypass the grammar
+(see [safety design](#safety-design)).
+
+- **Strict rejection.** The harness must not coerce argument types, and it must not
+  normalize tool names.
+  A coerced argument muddies the confirmation digest, which binds the exact argument
+  vector. The grammar prevents type errors at sample time, so coercion also has no
+  purpose.
+- **Precise error results.** A failed validation returns a tool result that names each
+  bad field and echoes the received arguments.
+  An unknown tool name returns the fixed result `unknown tool: <name>`. Empty tool
+  output returns a fixed sentence plus the exit status.
+- **The length-stop guard.** When a response reports that the output hit the token
+  limit, the parent executes nothing from that response.
+  A truncated call can validate and still be incomplete.
+  The re-prompt states that the call can be truncated, and it spends the malformed-call
+  budget. The internal record therefore carries the finish reason and the usage counts of
+  each response.
+- **No fallback parser.** The model process parses tool calls with `JSON::PP` alone.
+  A free-text fallback parser must not exist.
+  If the grammar fails, that is a defect to fix, not to parse around.
+
+## Tool output truncation
+
+Two limits cap each tool output toward the model: 100 lines and 4,096 bytes, whichever
+comes first. Truncation keeps the head and the tail, and it inserts an explicit marker
+with the count of elided lines and bytes.
+The exit status always survives.
+
+The transcript record keeps the full output, up to a hard cap of 65,536 bytes per
+record. Above the hard cap, the record also keeps the head and the tail, with a marker.
+No spool directory exists.
+Thus the parent unveil table stays a complete enumeration.
+
+## Failure budgets
+
+One table defines every recovery path and its budget.
+No retry path exists outside this table.
+The values are starting points.
+The evaluation suite validates them ([evaluation](evaluation.md)).
+
+| Recovery path | Budget | At the budget |
+| --- | --- | --- |
+| Malformed or invalid tool call | 1 re-prompt per step | The step stops. |
+| Length-stop response | Shares the malformed-call re-prompt; nothing executes | The step stops. |
+| Empty model response | 2 retries per step | The step stops with a fixed message. |
+| Identical consecutive tool call | 2 repeats; the third identical call does not execute | The step stops and fails closed. |
+| Transport failure | 3 retries per request, exponential backoff | The step stops with the transport error. |
+| Turns per step | 20 | One final call permits only `report`. The step ends. |
+| Context overflow inside a step | 1 compaction | The step stops with an error. |
+
+Two calls are identical when they have the same tool name and byte-identical canonical
+arguments.
+A detected repetition has one response: stop the step, report to the operator,
+and fail closed. The harness must not recover automatically, and it must not refuse one
+call and continue. The operator decides whether to continue.
+
+## Context management
+
+The model window is a projection, derived at read time from the append-only transcript.
+History is never rewritten.
+An elision or a summary appends a superseding record that names the ordinals it
+supersedes, and the projection skips the superseded records.
+
+- **Primary mechanism: deterministic elision.** Keep the last four tool results
+  verbatim. Replace each older tool result with a one-line stub that names the tool and
+  the count of omitted lines.
+  This mechanism is deterministic, needs no model call, and stays auditable.
+- **Secondary mechanism: a model-written summary.** For whole-session overflow only.
+  The harness summarizes with the same model and all tools disabled.
+  It keeps a verbatim tail of approximately 1,000 tokens, and it appends the summary as
+  an explicit transcript record.
+- **Cadence.** Elision and summary run between steps, at a prompt boundary, where one
+  full prompt re-process is acceptable.
+  Within a step, the prompt only appends (see [model invocation](#model-invocation)).
+  The one exception is the mid-step overflow compaction in the failure table.
+
+## Session transcript
+
+One append-only JSONL file per session is the session record:
+`/var/log/ttx/session-<id>.jsonl`. The directory `/var/log/ttx` has owner `_ttx` and
+mode 0700. Each file has mode 0600. This layout replaces a single audit-log file.
+The transcript is the audit log.
+A session file never changes after the session ends, so a retention job can remove old
+files safely. The append discipline is open design work in Phase 6
+([roadmap](roadmap.md)): the atomicity of one record write on a crash, and the fsync
+policy. No surveyed harness answers these questions.
+
+- **Envelope.** Each record is one JSON object on one line, with a timestamp, a
+  monotonic ordinal, a type, and a payload.
+  Ordinals are strictly consecutive.
+  A gap or a malformed line fails the load, loudly.
+- **Record types.** Session meta (format version, peer user id), operator prompt, model
+  response (with usage counts and finish reason), tool call, tool result (with exit
+  status and output), confirmation (peer user id and digest), elision, summary, error,
+  and session end.
+- **Persistence policy.** Turn boundaries, model-visible content, tool calls, executed
+  commands, exit statuses, confirmations, and usage counts persist.
+  Transient progress events go to the client only.
+- **Three consumers, one file.** The model context, client replay, and the audit all
+  derive from the transcript.
+  Replay is side-effect-free.
+  It never re-executes a tool.
+  A replayed event carries a replay mark, so the client cannot confuse it with a live
+  event.
+- **Crash record.** On a fatal error, the parent appends an error record before it
+  exits. Thus the transcript records the crash.
+- **Usage accounting.** Each model-response record embeds the usage counts that
+  llama-server returns.
+  Totals derive from the transcript.
+  No second store exists.
+- **Syslog duplicate.** The parent writes each record to `syslog(3)` as a redacted
+  summary. The key=value field names reuse the OpenTelemetry `gen_ai.*` vocabulary (for
+  example `gen_ai.usage.input_tokens`), without the OTLP transport.
+- **Raw wire log.** The model process appends each raw request body and each raw
+  response to a per-session wire log, `/var/log/ttx/wire-<id>.jsonl`. The parent opens
+  the file in append mode before the fork, and the model process inherits the
+  descriptor. The parent starts a fresh model process for each session.
+  Thus each session has its own wire-log descriptor, its own connection, and a fresh
+  address-space layout.
+  A write to an open descriptor sits inside the `stdio` promise, so the model-process
+  pledge does not widen.
+  The wire log holds everything the model saw.
+  Forensics for a malformed call needs the exact prompt bytes, not a paraphrase.
+  The wire log has the same confidentiality as the transcript: owner `_ttx`, mode 0600
+  (see [safety design](#safety-design)).
+
 ## Safety design
 
 Safety is first-class, not optional.
@@ -260,9 +538,10 @@ Safety is first-class, not optional.
   and an explicit confirmation through the confirmation protocol.
   No flag can turn this off.
 
-- **Audit.** The parent appends each prompt, tool call, executed command, exit status,
-  and confirmation to `/var/log/ttx/audit.log`. Each confirmation entry records the peer
-  user id and the digest.
+- **Audit.** The session transcript is the audit record (see
+  [session transcript](#session-transcript)). The parent appends each prompt, tool call,
+  executed command, exit status, and confirmation to the transcript of the session.
+  Each confirmation record holds the peer user id and the digest.
   The parent also writes each record to `syslog(3)`. `sendsyslog(2)` is in the `stdio`
   promise, so this needs no wider pledge.
   The harness pins the native log method (`setlogsock('native')`), so `Sys::Syslog` does
@@ -274,13 +553,17 @@ Safety is first-class, not optional.
 
 - **Audit confidentiality.** The audit content can hold a secret: a `pf` diff, a
   WireGuard key, or a sysctl value.
-  The local log has mode 0600 and owner `_ttx`. A remote forward crosses the network, so
-  the operator must weigh that leak before the operator enables it.
+  The transcript files and the wire logs have mode 0600 and owner `_ttx`. The wire log
+  holds everything the model saw, so it needs the same protection as the transcript.
+  A remote forward crosses the network, so the operator must weigh that leak before the
+  operator enables it.
 
 - **Correct privilege drop.** `rc.d` starts `ttxd` as root.
-  The parent opens the log in append-only mode, and it binds the control socket.
-  It then drops privilege in order: it clears the supplementary groups, it sets the
-  group id, and it sets the user id to `_ttx`. It verifies each id after the drop.
+  The parent binds the control socket, and it verifies the log directory (owner `_ttx`,
+  mode 0700). It then drops privilege in order: it clears the supplementary groups, it
+  sets the group id, and it sets the user id to `_ttx`. It verifies each id after the
+  drop. The parent creates each session file after the drop, as `_ttx`, because `_ttx`
+  owns the log directory.
   A wrong order leaves a residual privilege.
   After the drop, no `ttxd` process runs as root.
 
@@ -321,6 +604,7 @@ and to other users. `ttx fetch` re-checks the signature at load time.
 The harness ships as an OpenBSD port, `sysutils/ttx`. The port skeleton lives in the
 repository. The port installs `ttxd`, `ttx`, and the doas target wrappers under
 `/usr/local/libexec/ttx`. It creates the `_ttx` user, the `_ttxllm` user, and the
-`ttxop` group. It includes two `rc.d` scripts: one runs `llama-server` with the TTX
-model, and one runs `ttxd`. Weights do not ship in the package.
-`ttx fetch` downloads the models separately.
+`ttxop` group. It creates the log directory `/var/log/ttx` (owner `_ttx`, mode 0700) and
+the configuration directory `/etc/ttx`. It includes two `rc.d` scripts: one runs
+`llama-server` with the TTX model, and one runs `ttxd`. Weights do not ship in the
+package. `ttx fetch` downloads the models separately.

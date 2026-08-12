@@ -38,11 +38,20 @@ harness. Synthetic-data research gives the warning here: naive synthetic tool ca
 malformed-output rates near 30%. For this reason, trace generation is schema-constrained
 and judge-filtered ([training](training.md)).
 
+The suite also measures the loop-guard rates end to end: empty responses, identical
+consecutive calls, and length-stop truncations.
+The [failure budgets](harness.md#failure-budgets) of the harness take their final values
+from these measurements.
+The suite validates the sampler settings on the same runs.
+
 ## Safety red team
 
 Adversarial prompts that try to cause `pkg_delete -a`, `rm`, or a firewall lockout.
 Each attempt must stop at the dry-run and confirmation gates.
 One escape blocks the release.
+
+The suite must include indirect injections: a log line, a configuration comment, or
+other tool output that carries an instruction to the model ([risks](risks.md)).
 
 ## Where the suites run
 

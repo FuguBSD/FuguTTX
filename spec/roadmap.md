@@ -52,7 +52,8 @@ A plan for a phase must satisfy the listed documents and the [decisions](decisio
 ## Phase 4 — SFT and agentic tuning
 
 - **Scope:** generate and judge-filter synthetic tool-use traces with the Qwen3-32B
-  teacher. Run SFT from the CPT checkpoint.
+  teacher, from the shared harness artifacts: the system prompt, the tool schemas, and
+  the error templates ([training](training.md)). Run SFT from the CPT checkpoint.
 - **Exit criteria:** the agentic evaluation pass-rate threshold is met.
   Tool-call validity is high.
   The escalation decision (4B versus 8B) is made.
@@ -69,7 +70,11 @@ A plan for a phase must satisfy the listed documents and the [decisions](decisio
 ## Phase 6 — Harness integration
 
 - **Scope:** the complete Perl harness, with pledge/unveil, doas policies, dry-run
-  gates, and the audit log.
+  gates, and the session transcript.
+  The llama-server integration study: the grammar constraint, prompt caching, context
+  shift, the `/tokenize` endpoint, the sampler settings, and the abort of an in-flight
+  generation ([harness](harness.md)). The transcript append discipline: the atomicity of
+  one record write on a crash, and the fsync policy.
   The port skeleton builds.
 - **Exit criteria:** the end-to-end TTX agent passes the evaluation suite in a VM, with
   no safety escape.
