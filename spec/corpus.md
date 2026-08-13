@@ -8,7 +8,7 @@
 | FAQ and website | HTML; the `www` repository | BSD | Clone `www.git`, convert HTML to text |
 | Base source (C) | C; the `src` git mirror | ISC/BSD (ISC template preferred for new code) | Clone the git mirror, walk the tree |
 | Ports infrastructure (Perl) | Perl and Makefiles; the `ports` git mirror | BSD/ISC | Clone `ports.git` |
-| Commit logs | git log from the mirrors | **Copyright of the committers** | `git log` extraction, for the eval/RAG corpus only |
+| Commit logs (`src`, `ports`, `www`) | git log from the mirrors | Distributed with the trees, under the terms of the trees | `git log` extraction from each mirror |
 | Mailing lists (misc, tech, ports, bugs) | mbox/HTML via marc.info, mail-archive.com | **Copyright of the authors** | Collect for the eval/RAG corpus only |
 | undeadly.org articles | HTML | **Copyright of the authors** | Collect for the eval/RAG corpus only |
 
@@ -16,14 +16,20 @@
 
 The pipeline emits two corpora:
 
-- **Redistributable-clean corpus:** source, man pages, FAQ, www.
+- **Redistributable-clean corpus:** source, man pages, FAQ, www, commit logs.
   This corpus is the CPT training data.
   It can ship inside the weights.
-- **Eval/RAG corpus:** mailing lists, undeadly.org, commit logs.
+- **Eval/RAG corpus:** mailing lists, undeadly.org.
   This corpus is only for evaluation and optional local retrieval.
 
-Commit messages are prose by their committers, like list mail.
-No committer granted a training license, so commit logs take the eval/RAG lane.
+Commit logs are part of the trees.
+The project distributes them with the code, in every checkout and every public mirror.
+Thus the commit logs take the clean lane, with the code they describe.
+This lane assignment is a recorded human licensing-lane decision
+([autonomous development](agents.md)). List mail is different: the project does not
+distribute the list archives, and each author keeps copyright.
+Commit logs matter for CPT. Each message binds a change to its reason, in the idiom of
+the project.
 
 The lane rule is absolute.
 Author-copyrighted material must not enter the training data.
@@ -51,6 +57,28 @@ The CPT pass mixes in general-domain replay data against catastrophic forgetting
   ([licensing](licensing.md)).
 - The addition of a replay source is a licensing-lane change.
   A human approves it ([autonomous development](agents.md)).
+
+## Corpus use per variant
+
+One CPT run serves the whole family.
+Each variant is an SFT overlay on the CPT checkpoint of TTX 1 (D5,
+[variants](variants.md)). Thus the CPT data is the same for every variant: the full
+clean corpus, plus the [replay data](#replay-data).
+A variant must not have its own CPT slice.
+
+The SFT pass trains on synthetic traces, not on raw corpus text
+([training](training.md)). The corpus still steers SFT: `ttx-synth` draws its scenarios
+and its grounding facts from named corpus components.
+The table maps each variant to its corpus use.
+
+| Variant | CPT data | SFT scenario sources |
+| --- | --- | --- |
+| TTX 1 (operator) | Full clean corpus + replay data | Man pages and FAQ/www: `pf.conf` debug, package workflows, `sysctl` adjustment, `rcctl` service management |
+| TTX 1 Port (candidate) | The shared CPT checkpoint | Ports tree and the `ports` commit logs: port updates, Makefile and PLIST work |
+| TTX 1 Code (candidate) | The shared CPT checkpoint | Base source tree and the `src` commit logs: patches against the trees, regress runs |
+
+The eval/RAG corpus serves every variant in the same way: evaluation suites and optional
+local retrieval. It must not train any variant.
 
 ## Mirrors
 

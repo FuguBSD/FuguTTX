@@ -10,8 +10,9 @@
 
 ## Datasets
 
-The clean corpus derives from ISC/BSD source code, mandoc (ISC) man pages, and the
-BSD-licensed FAQ/www.
+The clean corpus derives from ISC/BSD source code, mandoc (ISC) man pages, the
+BSD-licensed FAQ/www, and the commit logs of those trees.
+The project distributes the commit logs with the code, so the logs share its terms.
 All of it is redistributable with attribution and notices.
 Published **dataset cards** document the source, the filters, and the license class of
 each component.
