@@ -22,6 +22,10 @@ Apply these rules:
   Do not work around it, and do not let code and specification drift apart.
 - When your change goes against a decision, stop.
   Propose a change to [decisions](spec/decisions.md) and get human approval first.
+- When you update the specification, write the text so that it describes the
+  current state only.
+  Do not write the update as an amendment or a revision, and do not refer to an
+  earlier state.
 
 ## Critical: writing standard
 
