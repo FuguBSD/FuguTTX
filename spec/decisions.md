@@ -72,8 +72,11 @@ Details: [variants](variants.md).
 
 ## D6 — The corpus has two lanes, and the lane rule is absolute
 
-OpenBSD source (ISC/BSD), man pages (mandoc, ISC), and the FAQ/website (BSD, the `www`
-repository) make the redistributable-clean corpus.
+OpenBSD source (ISC/BSD), man pages (mandoc, ISC), the FAQ/website (BSD, the `www`
+repository), and the commit logs of those trees make the redistributable-clean corpus.
+The project distributes the commit logs with the code, and every clone of a mirror
+contains the full log.
+Thus the logs share the lane of the code.
 This corpus trains the model.
 Mailing-list archives and undeadly.org are copyright of their authors.
 That material is only for evaluation and optional local RAG. It must not enter the

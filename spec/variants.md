@@ -16,11 +16,13 @@ It goes in a variant.
 ## Overlays, not forks
 
 Each variant starts from the CPT checkpoint of TTX 1. The clean corpus contains the base
-source tree and the ports tree.
+source tree, the ports tree, and their commit logs.
 Thus the domain knowledge is shared.
 The SFT trace mix is what makes a variant different.
-Each variant is an Axolotl overlay in `packages/ttx-train/configs/`. This keeps one base
-model, one CPT run, and one validated inference envelope for the full family.
+The corpus components that seed each trace mix are specified per variant
+([corpus](corpus.md#corpus-use-per-variant)). Each variant is an Axolotl overlay in
+`packages/ttx-train/configs/`. This keeps one base model, one CPT run, and one validated
+inference envelope for the full family.
 
 A move to a different base model is an escalation, not a default.
 Two conditions must hold:

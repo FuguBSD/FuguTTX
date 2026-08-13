@@ -43,6 +43,8 @@ The replay data follows the [replay rules](corpus.md#replay-data) of the corpus.
 
 Supervised fine-tuning from the CPT checkpoint, on synthetic agentic traces: `pf.conf`
 debug, `pkg_add` workflows, `sysctl` adjustment, `rcctl` service management.
+The corpus components that seed the scenarios of each variant are specified in the
+[corpus](corpus.md#corpus-use-per-variant).
 
 ### Trace generation
 

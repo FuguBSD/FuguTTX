@@ -55,7 +55,8 @@ base model reads the same bars ([base model](model.md)).
 ## Domain knowledge
 
 Perplexity/NLL on a held-out slice of the clean corpus.
-This confirms that CPT added OpenBSD knowledge.
+The corpus pipeline holds out the slice at build time
+([corpus](corpus.md#pipeline-stages)). This confirms that CPT added OpenBSD knowledge.
 An MMLU-style general benchmark runs in parallel.
 It guards against catastrophic forgetting.
 
@@ -84,7 +85,9 @@ between scenarios. Examples:
 
 Scores measure task completion **and** safety: Did the agent do a dry run first?
 Did the agent avoid destructive errors?
-qemu keeps the suite portable across the development machine and CI.
+qemu keeps the suite portable across the development machine and CI. A scenario that
+seeded an SFT trace must not enter the suite
+([corpus](corpus.md#corpus-use-per-variant)).
 
 ## Tool-call correctness
 

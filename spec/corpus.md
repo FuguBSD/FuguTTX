@@ -8,7 +8,7 @@
 | FAQ and website | HTML; the `www` repository | BSD | Clone `www.git`, convert HTML to text |
 | Base source (C) | C; the `src` git mirror | ISC/BSD (ISC template preferred for new code) | Clone the git mirror, walk the tree |
 | Ports infrastructure (Perl) | Perl and Makefiles; the `ports` git mirror | BSD/ISC | Clone `ports.git` |
-| Commit logs | git log from the mirrors | **Copyright of the committers** | `git log` extraction, for the eval/RAG corpus only |
+| Commit logs (`src`, `ports`, `www`) | git log from the mirrors | Distributed with the trees, under the terms of the trees | `git log` extraction from each mirror |
 | Mailing lists (misc, tech, ports, bugs) | mbox/HTML via marc.info, mail-archive.com | **Copyright of the authors** | Collect for the eval/RAG corpus only |
 | undeadly.org articles | HTML | **Copyright of the authors** | Collect for the eval/RAG corpus only |
 
@@ -16,14 +16,22 @@
 
 The pipeline emits two corpora:
 
-- **Redistributable-clean corpus:** source, man pages, FAQ, www.
+- **Redistributable-clean corpus:** source, man pages, FAQ, www, commit logs.
   This corpus is the CPT training data.
   It can ship inside the weights.
-- **Eval/RAG corpus:** mailing lists, undeadly.org, commit logs.
+- **Eval/RAG corpus:** mailing lists, undeadly.org.
   This corpus is only for evaluation and optional local retrieval.
 
-Commit messages are prose by their committers, like list mail.
-No committer granted a training license, so commit logs take the eval/RAG lane.
+Commit logs are part of the trees.
+The project distributes them with the code: every clone of a public mirror contains the
+full log. Thus the commit logs take the clean lane, with the code they describe.
+This lane assignment is a recorded human licensing-lane decision
+([autonomous development](agents.md)). List mail is different: the project does not
+distribute the list archives, and each author keeps copyright.
+Commit logs matter for CPT. Each message binds a change to its reason, in the idiom of
+the project. Each commit-log chunk keeps the tree name, the commit id, the date, and the
+committer. Thus attribution travels with the text, and the pipeline can select the logs
+of one tree.
 
 The lane rule is absolute.
 Author-copyrighted material must not enter the training data.
@@ -52,6 +60,33 @@ The CPT pass mixes in general-domain replay data against catastrophic forgetting
 - The addition of a replay source is a licensing-lane change.
   A human approves it ([autonomous development](agents.md)).
 
+## Corpus use per variant
+
+One CPT run serves the whole family.
+Each variant is an SFT overlay on the CPT checkpoint of TTX 1 (D5,
+[variants](variants.md)). Thus the CPT data is the same for every variant: the full
+clean corpus, plus the [replay data](#replay-data).
+A variant must not have its own CPT slice.
+
+The SFT pass trains on synthetic traces, not on raw corpus text
+([training](training.md)). The corpus still steers SFT: `ttx-synth` draws its scenarios
+and its grounding facts from named corpus components.
+The table maps each variant to its scenario sources.
+
+| Variant | SFT scenario sources |
+| --- | --- |
+| TTX 1 (operator) | Man pages and FAQ/www: `pf.conf` debug, package workflows, `sysctl` adjustment, `rcctl` service management |
+| TTX 1 Port (candidate) | Ports tree, the `ports` commit logs, and the port-maintenance man pages (`ports(7)`, `bsd.port.mk(5)`): port updates, Makefile and PLIST work |
+| TTX 1 Code (candidate) | Base source tree, the `src` commit logs, and `style(9)`: patches against the trees, regress runs |
+
+A seed and an evaluation item must stay apart.
+An item that seeds an SFT trace must not appear in an evaluation suite
+([evaluation](evaluation.md)). Without this split, a persona measurement grades memory,
+and the promotion rule of D5 loses its meaning.
+
+The eval/RAG corpus serves every variant in the same way: evaluation suites and optional
+local retrieval. It must not train any variant.
+
 ## Mirrors
 
 Fetch from the official read-only git conversions at
@@ -62,11 +97,18 @@ CVS pulls are brittle.
 The sources table names each tree the pipeline uses.
 Do not mirror a tree that no source row names.
 
+A corpus build pins one commit per mirror.
+The corpus manifest records each pinned commit id.
+Thus each build is reproducible, and the dataset card names the exact tree state.
+
 ## Pipeline stages
 
-1. Fetch and synchronize the mirrors.
+1. Fetch and synchronize the mirrors, and pin one commit per mirror.
 2. Extract and normalize: render the man pages with mandoc, convert HTML to text, walk
-   the code trees.
-3. Clean and chunk: remove license headers, remove near-duplicates.
+   the code trees, extract one record per commit from each log.
+3. Clean and chunk: remove license headers, remove near-duplicates, drop each commit
+   message below a documented length floor.
 4. Tag each chunk with its source and its license class.
-5. Emit the two corpora.
+5. Emit the two corpora, and hold out a slice of the clean corpus for the perplexity
+   suite ([evaluation](evaluation.md#domain-knowledge)). The held-out slice must not
+   enter a training manifest.
