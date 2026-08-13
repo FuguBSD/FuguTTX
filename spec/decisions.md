@@ -4,6 +4,8 @@ These nine decisions control all plans.
 A plan must not go against a decision.
 To change a decision, change this document first.
 
+<a id="d1"></a>
+
 ## D1 — Base model: Qwen3-4B (Apache 2.0)
 
 Qwen3-4B is the only current model family with all of these properties: an Apache 2.0
@@ -14,6 +16,8 @@ Those licenses do not agree with the permissive-only culture of OpenBSD. Those m
 are excluded. The family line has revisions.
 Phase 2 re-surveys the line and pins the exact revision, before any training spend.
 Details: [base model](model.md).
+
+<a id="d2"></a>
 
 ## D2 — Inference: the `misc/llama.cpp` port, CPU only
 
@@ -36,6 +40,8 @@ Before a release, the harness smoke suite must pass on the target arm64 hardware
 Details: [inference](inference.md), and
 [OpenBSD and the Apple GPU](../docs/research/openbsd-apple-silicon-gpu.md).
 
+<a id="d3"></a>
+
 ## D3 — Training: Axolotl QLoRA on a Scaleway H100, fully as code
 
 OpenTofu declares each cloud resource, with the documented exceptions
@@ -46,6 +52,8 @@ Object Storage is the only durable layer.
 QLoRA runs complete in hours.
 On-demand billing and routine `tofu destroy` keep the costs low.
 Details: [training](training.md), [infrastructure](infrastructure.md).
+
+<a id="d4"></a>
 
 ## D4 — Method: knowledge-dense continued pretraining, then supervised fine-tuning
 
@@ -68,6 +76,8 @@ The judge that grades a release bar is a different model family than the teacher
 so training must beat retrieval before it ships ([evaluation](evaluation.md)). Details:
 [training](training.md).
 
+<a id="d5"></a>
+
 ## D5 — Variants are personas, and evaluation promotes them
 
 TTX 1 serves the operator (sysadmin).
@@ -76,6 +86,8 @@ Variants are SFT overlays on the CPT checkpoint of TTX 1, not separate bases.
 A variant ships only when the generalist fails the persona evaluation suite and the
 overlay passes it. A move to a different base model is an escalation, not a default.
 Details: [variants](variants.md).
+
+<a id="d6"></a>
 
 ## D6 — The corpus has two lanes, and the lane rule is absolute
 
@@ -92,6 +104,8 @@ Each lane has its own bucket.
 The training corpus and the eval/RAG corpus must not share a bucket.
 No project bucket is public.
 Details: [corpus](corpus.md).
+
+<a id="d7"></a>
 
 ## D7 — Languages and tools are fixed
 
@@ -113,6 +127,8 @@ It validates its arguments, and it calls the real command.
 The C wrappers use libc alone, so they add no dependency outside base.
 Details: [repository](repository.md), [harness](harness.md).
 
+<a id="d8"></a>
+
 ## D8 — Claude agents develop the project autonomously
 
 Each pipeline stage has a deterministic entry point.
@@ -122,6 +138,8 @@ Agents plan, implement, train, and evaluate end to end.
 Humans keep a short list of decisions: merges, release signatures, licensing lanes, and
 spend above the budget.
 Details: [autonomous development](agents.md).
+
+<a id="d9"></a>
 
 ## D9 — Operation is continuous, and the platform blocks what it can
 

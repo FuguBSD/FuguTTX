@@ -37,9 +37,21 @@ A plan for a phase must satisfy the listed documents and the [decisions](decisio
 - **Scope:** build the **harness slice**: the shared artifacts (the system prompt, the
   tool metadata table and its JSON schemas, the error templates, and the re-prompt
   texts), and a minimal agent loop that drives a model through the agentic scenarios in
-  the OpenBSD guests. The slice implements the loop, the tool table, and the dry-run and
-  confirmation gates. It defers to Phase 6: the three-process privilege separation,
-  pledge and unveil, the doas C wrappers, the control socket, and the port.
+  the OpenBSD guests. The slice implements [HRN-PERL](harness.md#hrn-perl),
+  [HRN-TOOL-TABLE](harness.md#hrn-tool-table), [HRN-TOOL-RO](harness.md#hrn-tool-ro),
+  [HRN-TOOL-GATE](harness.md#hrn-tool-gate),
+  [HRN-TOOL-REPORT](harness.md#hrn-tool-report), [HRN-LOOP](harness.md#hrn-loop) without
+  HRN-LOOP-1, [HRN-CONFIRM](harness.md#hrn-confirm) without HRN-CONFIRM-6,
+  [HRN-SAFE-DRYRUN](harness.md#hrn-safe-dryrun), [HRN-INVOKE](harness.md#hrn-invoke)
+  without HRN-INVOKE-5, [HRN-PROMPT](harness.md#hrn-prompt),
+  [HRN-CALLS](harness.md#hrn-calls), [HRN-TRUNC](harness.md#hrn-trunc), and
+  [HRN-BUDGETS](harness.md#hrn-budgets).
+  It defers each other harness unit to Phase 6, among them the three-process privilege
+  separation ([HRN-PROC](harness.md#hrn-proc)), pledge and unveil
+  ([HRN-SAFE-PLEDGE](harness.md#hrn-safe-pledge)), the doas C wrappers
+  ([HRN-SAFE-WRAP](harness.md#hrn-safe-wrap)), the control socket
+  ([HRN-SOCKET](harness.md#hrn-socket)), and the port ([HRN-PKG](harness.md#hrn-pkg)).
+  The [implementation register](status.md) lists each unit and its phase.
   Build the OpenBSD QA and agentic evaluation sets.
   Measure the [baseline grid](evaluation.md#baselines-and-ablations): the base model
   zero-shot, and the base model with the retrieval tool, both through the slice.
@@ -95,12 +107,15 @@ agentic suite have real schemas and a real loop to run against.
 
 ## Phase 6 — Harness completion
 
-- **Scope:** complete the Phase 2 slice into the full Perl harness: the three-process
-  privilege separation, pledge/unveil, the doas C wrappers, the control socket, and the
-  session transcript. The llama-server integration study: the grammar constraint, prompt
-  caching, context shift, the `/tokenize` endpoint, the sampler settings, and the abort
-  of an in-flight generation ([harness](harness.md)). The transcript append discipline:
-  the atomicity of one record write on a crash, and the fsync policy.
+- **Scope:** complete the Phase 2 slice into the full Perl harness:
+  [HRN-PROC](harness.md#hrn-proc), [HRN-SAFE-PLEDGE](harness.md#hrn-safe-pledge),
+  [HRN-SAFE-WRAP](harness.md#hrn-safe-wrap), [HRN-SOCKET](harness.md#hrn-socket), and
+  [HRN-TRANSCRIPT](harness.md#hrn-transcript).
+  Phase 6 completes each harness unit that the [implementation register](status.md)
+  lists with “Done by” 6. The llama-server integration study: the grammar constraint,
+  prompt caching, context shift, the `/tokenize` endpoint, the sampler settings, and the
+  abort of an in-flight generation ([harness](harness.md)). The transcript append
+  discipline: the atomicity of one record write on a crash, and the fsync policy.
   The port skeleton builds.
 - **Exit criteria:** the end-to-end TTX agent passes the evaluation suite in a VM, with
   no safety escape.

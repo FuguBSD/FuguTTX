@@ -1,5 +1,7 @@
 # Corpus
 
+<a id="cor-src"></a>
+
 ## Sources
 
 | Source | Format / access | License | Extraction method |
@@ -11,6 +13,8 @@
 | Commit logs (`src`, `ports`, `www`) | git log from the mirrors | Distributed with the trees, under the terms of the trees | `git log` extraction from each mirror |
 | Mailing lists (misc, tech, ports, bugs) | mbox/HTML via marc.info, mail-archive.com | **Copyright of the authors** | Collect for the eval/RAG corpus only |
 | undeadly.org articles | HTML | **Copyright of the authors** | Collect for the eval/RAG corpus only |
+
+<a id="cor-lanes"></a>
 
 ## License lanes
 
@@ -45,6 +49,8 @@ A training manifest accepts only tags on a fixed allow list: the clean-lane tags
 approved [replay](#replay-data) tags.
 A chunk with the eval/RAG tag must not reach a training manifest.
 
+<a id="cor-synth"></a>
+
 ## Synthetic augmentation
 
 CPT carries the primary knowledge of the model (D4), and a model learns a fact only from
@@ -77,6 +83,8 @@ These rules govern the augmentation:
   It gets a dataset card ([licensing](licensing.md)), and its lane assignment is a
   recorded human licensing-lane decision ([autonomous development](agents.md)).
 
+<a id="cor-replay"></a>
+
 ## Replay data
 
 The CPT pass mixes in general-domain replay data against catastrophic forgetting
@@ -91,6 +99,8 @@ The CPT pass mixes in general-domain replay data against catastrophic forgetting
   ([licensing](licensing.md)).
 - The addition of a replay source is a licensing-lane change.
   A human approves it ([autonomous development](agents.md)).
+
+<a id="cor-use"></a>
 
 ## Corpus use per variant
 
@@ -120,6 +130,8 @@ memory, and the promotion rule of D5 loses its meaning.
 The eval/RAG corpus serves every variant in the same way: evaluation suites and optional
 local retrieval. It must not train any variant.
 
+<a id="cor-mirror"></a>
+
 ## Mirrors
 
 Fetch from the official read-only git conversions at
@@ -133,6 +145,8 @@ Do not mirror a tree that no source row names.
 A corpus build pins one commit per mirror.
 The corpus manifest records each pinned commit id.
 Thus each build is reproducible, and the dataset card names the exact tree state.
+
+<a id="cor-stages"></a>
 
 ## Pipeline stages
 

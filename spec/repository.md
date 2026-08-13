@@ -4,6 +4,8 @@ This is a Python + Perl + HCL monorepo.
 uv workspaces manage the Python packages: one lockfile, a shared virtualenv, and
 per-package `uv sync`. `just` is the polyglot task runner for all of it.
 
+<a id="rep-tools"></a>
+
 ## Tools
 
 One language per concern.
@@ -22,6 +24,8 @@ The boundary is where the code runs.
 | Inference runtime | llama.cpp everywhere | The same runtime serves development (Metal on Apple Silicon) and production (OpenBSD CPU). What is validated is what ships. |
 | Teacher/judge model | Qwen3-32B teacher (Apache 2.0), served by vLLM on the H100; a release judge from a different model family | Clean license provenance for synthetic data. The teacher writes the corpus augmentation, and it proposes and filters traces. A judge outside the Qwen family grades each release bar ([evaluation](evaluation.md)). |
 | CI | GitHub Actions | The repository and the corpus mirrors are on GitHub. CI validates each push, and it operates the pipeline with the scoped pipeline credential ([infrastructure](infrastructure.md)). |
+
+<a id="rep-layout"></a>
 
 ## Layout
 
@@ -60,6 +64,8 @@ fuguttx/
 └── .github/workflows/           # CI
 ```
 
+<a id="rep-recipes"></a>
+
 ## Task recipes
 
 `just data`, `just synth`, `just train cpt`, `just train sft`, `just eval`,
@@ -68,6 +74,8 @@ fuguttx/
 The top-level `just check` runs each local lint, test, and validation step.
 It must pass before each commit.
 CI runs the same gate.
+
+<a id="rep-ci"></a>
 
 ## CI
 

@@ -1,5 +1,7 @@
 # Risks
 
+<a id="rsk-hall"></a>
+
 ## Hallucination on destructive commands (highest risk)
 
 A 4B model can give a wrong `pfctl`, `pkg_delete`, or `sysctl` command, with confidence.
@@ -7,6 +9,8 @@ Mitigations: mandatory dry-run and confirmation gates, per-command doas rules,
 pledge/unveil, and the safety red team ([harness](harness.md),
 [evaluation](evaluation.md)). Unattended execution of destructive actions is not
 possible — by design, not by policy.
+
+<a id="rsk-inject"></a>
 
 ## Prompt injection through tool output
 
@@ -21,17 +25,23 @@ toward the model, so no proven pattern exists
 The safety red team must include injected-observation scenarios
 ([evaluation](evaluation.md)).
 
+<a id="rsk-stale"></a>
+
 ## Corpus staleness versus `-current`
 
 OpenBSD moves fast. A model trained on a snapshot drifts from `-current`. Mitigations:
 periodic retraining on fresh mirrors, and local RAG over live man pages and the FAQ for
 facts that change often.
 
+<a id="rsk-eval"></a>
+
 ## Evaluation difficulty
 
 Automatic grades for sysadmin agentic tasks are hard.
 The qemu VM suite is real engineering work and a project dependency, not an
 afterthought. It has its own place in the [roadmap](roadmap.md).
+
+<a id="rsk-cpt"></a>
 
 ## CPT can add too little knowledge
 
@@ -46,7 +56,9 @@ directly, on perplexity and on the OpenBSD QA set, and the retrieval baseline bo
 value of training. If the delta is small, the recorded escalations are: a larger
 augmentation multiple, a higher adapter rank, or a full-parameter CPT run.
 Each escalation fits one H100 at the 4B size.
-A human reviews the method before Phase 4 starts.
+A human reviews the method before the SFT campaign starts ([roadmap](roadmap.md)).
+
+<a id="rsk-synth"></a>
 
 ## Synthetic data quality
 
@@ -62,11 +74,15 @@ record that contradicts its source or adds a fact
 ([training](training.md#augmentation-generation)). The OpenBSD QA suite and the
 hallucinated-flag rate measure the risk that remains.
 
+<a id="rsk-lanes"></a>
+
 ## Licensing lane discipline
 
 Author-copyrighted material (mailing lists, undeadly.org) must stay in the eval/RAG
 lane. Mitigation is mechanical: license tags are applied at extraction, and a machine
 check runs before each training manifest is built ([corpus](corpus.md)).
+
+<a id="rsk-price"></a>
 
 ## Price and availability drift
 
@@ -76,6 +92,8 @@ Exposure is bounded by structure: per-minute billing and the create/destroy life
 An idle GPU can cost money only while `just infra-status` shows that it exists.
 The idle watchdog destroys a train stack with no training in flight
 ([infrastructure](infrastructure.md)).
+
+<a id="rsk-blast"></a>
 
 ## Autonomous-operation blast radius
 

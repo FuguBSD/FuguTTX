@@ -2,6 +2,8 @@
 
 The TTX agent must operate on OpenBSD with 16 GB RAM or less, on the CPU only.
 
+<a id="inf-runtime"></a>
+
 ## Runtime
 
 The runtime is the `misc/llama.cpp` port (`pkg_add llama.cpp`), CPU only.
@@ -14,7 +16,6 @@ mips64el, powerpc, powerpc64, riscv64, and sparc64. Dependencies: `devel/libggml
 JSON-schema/grammar constraint on tool calls, prompt caching for a byte-stable prefix,
 and context shift off.
 The [harness](harness.md) states the reasons.
-Phase 6 validates the exact flags ([roadmap](roadmap.md)).
 
 `devel/libggml` sets `-DGGML_VULKAN=on` for amd64 and aarch64. The aarch64 package
 therefore installs a Vulkan back end, `libggml-vulkan.so`. On Apple Silicon that back
@@ -23,6 +24,8 @@ runtime prints no error.
 An operator must not read a successful start as evidence of GPU use.
 The reason is that OpenBSD has no kernel driver for the Apple GPU. See
 [OpenBSD and the Apple GPU](../docs/research/openbsd-apple-silicon-gpu.md).
+
+<a id="inf-format"></a>
 
 ## Format and quantization levels
 
@@ -34,6 +37,8 @@ The distribution format is GGUF. Each release has three quantization levels:
 | **Q5_K_M** | Machines with more memory | Smoke validation only |
 | **Q3_K_M** | The smallest machines | Smoke validation only |
 
+<a id="inf-memfit"></a>
+
 ## Memory fit in 16 GB
 
 - 4B at Q4_K_M: approximately 2.5–3 GB of weights.
@@ -44,13 +49,15 @@ The distribution format is GGUF. Each release has three quantization levels:
 Both sizes fit with a large margin.
 A 13B-class model fits in memory, but it is too slow on the CPU.
 
+<a id="inf-perf"></a>
+
 ## Performance
 
 CPU llama.cpp is limited by memory bandwidth.
 Consumer hardware gives approximately 10–15 tokens/s for a 7B-class model.
 **No OpenBSD-specific tokens/s benchmark exists in public.** FuguTTX measures this
 first-hand with `llama-bench` on target hardware.
-FuguTTX publishes the results in Phase 2 ([roadmap](roadmap.md)).
+FuguTTX publishes the results.
 
 Token generation reads all weights for each token.
 Memory bandwidth therefore sets a hard ceiling.
@@ -76,6 +83,8 @@ Pro has a specification peak of 200 GB/s, and no measured figure exists for it.
 A change of target machine therefore gains more than a GPU can, and it needs no new
 code.
 
+<a id="inf-latency"></a>
+
 ### Latency budget
 
 Tokens/s alone does not bound the user experience.
@@ -87,14 +96,16 @@ An end-to-end budget therefore governs:
   inbound SSH, except from 10.0.0.0/8, in pf.conf,” up to the confirmation prompt.
 - **The budget:** the reference task must complete in **5 minutes or less** on the M1
   reference machine, at Q4_K_M, through the harness.
-- Phase 2 measures full agent turns: prompt processing, generation, and tool time, per
-  turn and per task ([roadmap](roadmap.md)). `llama-bench` numbers do not substitute for
-  a full-turn measurement.
+- The measurement covers full agent turns: prompt processing, generation, and tool time,
+  per turn and per task.
+  `llama-bench` numbers do not substitute for a full-turn measurement.
 - The budget is a pre-registered release bar ([evaluation](evaluation.md)). The HTTP
   timeout of the harness derives from the same measurements ([harness](harness.md)).
 
 The budget is a starting value.
 Only a human changes it, with a recorded reason, before a measurement runs.
+
+<a id="inf-arm64"></a>
 
 ### aarch64 build defect
 
@@ -114,12 +125,14 @@ installs fourteen tuned variants.
 The OpenBSD kernel exports `HWCAP_ASIMDDP` on this hardware.
 The defect is in the port, and not in the kernel.
 
-FuguTTX must do this work in Phase 2, before it considers any GPU work:
+FuguTTX must do this work before it considers any GPU work:
 
 1. Run `llama-bench` on the target machine with the package as it ships.
 2. Rebuild `devel/libggml` with `-DGGML_CPU_ARM_ARCH=armv8.4-a+dotprod+fp16`.
 3. Run `llama-bench` again, and record the difference.
 4. Send both results to the port maintainer.
+
+<a id="inf-quant"></a>
 
 ## Quantization procedure
 
@@ -128,12 +141,16 @@ Conversion is CPU-bound.
 It runs on the operator machine.
 No GPU is necessary.
 
+<a id="inf-devloop"></a>
+
 ## Development loop
 
 Local iteration uses llama.cpp with Metal on Apple Silicon.
 The artifact that ships is the GGUF file validated on OpenBSD CPU. The same runtime
 serves development and production.
 What is validated is what ships.
+
+<a id="inf-nogpu"></a>
 
 ## GPU inference is not available on the target
 
@@ -156,6 +173,8 @@ August 2026. Four facts control the result.
 OpenBSD does support GPU offload on amd64 with an AMD card, through the ggml Vulkan back
 end. D2 is therefore “CPU only on the target hardware”.
 D2 is not “OpenBSD has no GPU path”.
+
+<a id="inf-integrity"></a>
 
 ## Release integrity
 

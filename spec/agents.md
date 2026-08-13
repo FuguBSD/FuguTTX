@@ -6,6 +6,8 @@ This document specifies what the agents need: the environment, the credentials, 
 feedback loops, and the boundaries.
 In this document, “agent” means a development agent, not the TTX agent.
 
+<a id="agt-iface"></a>
+
 ## The repository is the interface
 
 Each action has a deterministic entry point: a `just` recipe for each pipeline stage,
@@ -15,6 +17,8 @@ Agents run the same commands as humans.
 Thus each action is reproducible and auditable, no matter who did it.
 If a capability has no recipe, add the recipe.
 Do not work around it.
+
+<a id="agt-runtime"></a>
 
 ## Runtime environment
 
@@ -35,6 +39,8 @@ Long work — training campaigns, corpus builds, evaluation sweeps — must cont
 sessions, or hand off cleanly between sessions.
 Commit important state to the repository, synchronize it to Object Storage, or write it
 to the runbook. Do not keep important state only in an agent context.
+
+<a id="agt-cred"></a>
 
 ## Credentials
 
@@ -57,6 +63,8 @@ own scope.
 IAM cannot grant access to one bucket.
 A bucket policy is the only per-bucket control.
 
+<a id="agt-spend"></a>
+
 ## Spend controls
 
 Agents and CI can start GPU instances and metal servers, so cost discipline must not
@@ -73,6 +81,8 @@ Two habits therefore remain:
 
 Only a human raises the budget.
 
+<a id="agt-feedback"></a>
+
 ## Feedback loops
 
 Autonomous development is only as good as its verification.
@@ -88,6 +98,8 @@ Each component defines “done” in a form a machine can check:
 Some outcomes have no mechanical check: licensing judgments, release quality, benchmark
 publication. For those, the runbook says so, and the work goes to a human.
 
+<a id="agt-docs"></a>
+
 ## Documentation
 
 This specification, the runbooks, and the corpus/licensing notes are the source of truth
@@ -99,6 +111,8 @@ The standing rules:
 - Do not leave a GPU instance in operation, unattended.
 - Do not move eval/RAG-corpus material into a training manifest.
 - Do not sign or publish artifacts.
+
+<a id="agt-human"></a>
 
 ## Human decision points
 

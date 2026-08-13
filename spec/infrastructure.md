@@ -1,5 +1,7 @@
 # Infrastructure
 
+<a id="iac-code"></a>
+
 OpenTofu, with the Scaleway provider, declares each Scaleway resource.
 Do not make resources in the console.
 Seven exceptions exist.
@@ -18,6 +20,8 @@ Scaleway revised prices on 2026-06-01. Each price in this document carries
 the date it was read.
 The pipeline must read the live price before it creates a resource.
 Do not plan a campaign against a price in this document.
+
+<a id="iac-region"></a>
 
 ## Region and zone
 
@@ -38,6 +42,8 @@ One zone therefore caps the number of instances that a defective loop can create
 Each bucket must use the region `fr-par`. Do not put a bucket in a second region.
 A quota, a price, and a data-transfer charge each depend on the region.
 
+<a id="iac-pins"></a>
+
 ## Version pins
 
 | Tool | Constraint |
@@ -52,6 +58,8 @@ the credential design uses ephemeral resources and write-only arguments.
 The provider publishes `action` resources and list resources.
 OpenTofu supports neither.
 A stack must not use them.
+
+<a id="iac-layout"></a>
 
 ## Layout
 
@@ -81,6 +89,8 @@ must not contain a hardcoded Scaleway UUID. Resolve each identifier with a data 
 `scaleway_account_project`, `scaleway_baremetal_offer`, `scaleway_baremetal_os`,
 `scaleway_iam_ssh_key`, `scaleway_marketplace_image`, `scaleway_instance_server_type`.
 
+<a id="iac-tags"></a>
+
 ## Tags
 
 The Scaleway provider has no default tags.
@@ -96,6 +106,8 @@ Build both shapes from one map in `locals.tf`.
 | `ttx:lifecycle` | `ttx:lifecycle=ephemeral` | The watchdog reaps `ephemeral` only |
 | `ttx:run-id` | `ttx:run-id=8891fa2c` | Ties a resource to one CI run |
 | `ttx:expires` | `ttx:expires=2026-08-02T18:00:00Z` | The hard end of the lease, in UTC |
+
+<a id="iac-metal"></a>
 
 ## Bare metal rule
 
@@ -126,6 +138,8 @@ per hour.
 ## Stacks
 
 Three operational stacks, with three lifecycles, and one image stack.
+
+<a id="iac-persist"></a>
 
 ### `infra/persistent`
 
@@ -170,6 +184,8 @@ only.
 
 Object lock must stay off on each bucket.
 Object lock cannot be disabled again.
+
+<a id="iac-dev"></a>
 
 ### `infra/dev`
 
@@ -276,6 +292,8 @@ Two lifecycle rules bound it:
   cycle loses nothing.
   The monthly reinstall schedule then retires.
 
+<a id="iac-train"></a>
+
 ### `infra/train`
 
 The stack declares four resources: a routed IPv4 address, a scratch volume, a block root
@@ -334,6 +352,8 @@ A full stop, a server-type migration, and a delete erase it.
 Public bandwidth bounds the corpus transfer: 10 Gb/s on `H100-1-80G` and 2.5 Gb/s on
 `L40S-1-48G`. Transfer time is billed GPU time.
 
+<a id="iac-image"></a>
+
 ### `infra/image`
 
 The stack publishes the OpenBSD guest image that the agentic suite needs.
@@ -341,6 +361,8 @@ The stack publishes the OpenBSD guest image that the agentic suite needs.
 `just image-publish` uploads the file to the artifacts bucket.
 Apply the stack when the OpenBSD release changes.
 Keep the previous image in the artifacts bucket.
+
+<a id="iac-hosts"></a>
 
 ## OpenBSD hosts
 
@@ -386,6 +408,8 @@ An arm64-only harness fault escapes the suite.
 No current suite requires a native OpenBSD host on Scaleway.
 Do not add the host before the suite exists ([evaluation](evaluation.md)).
 
+<a id="iac-dura"></a>
+
 ## Durability
 
 Object Storage is the only durable layer.
@@ -407,6 +431,8 @@ Three limits apply, and the runbook must state each one:
 The development host follows the same rule: everything on it rebuilds from git and from
 Object Storage. Elastic Metal accepts no Block Storage volume, so the platform enforces
 the rule.
+
+<a id="iac-state"></a>
 
 ## State
 
@@ -448,6 +474,8 @@ Test each bucket-policy change on a scratch bucket first.
 
 Recovery from a bad state is a human act.
 The runbook must hold the `tofu force-unlock` procedure and the `tofu import` procedure.
+
+<a id="iac-cred"></a>
 
 ## Credentials
 
@@ -503,6 +531,8 @@ Rotation order:
 3. Run one workflow and confirm it passes.
 4. Delete the old key.
 
+<a id="iac-traincred"></a>
+
 ### The train credential
 
 A Scaleway instance has no metadata identity.
@@ -519,12 +549,16 @@ The train key therefore must not touch OpenTofu, `user_data`, or state:
 4. `just infra-down train` deletes the key.
    The expiry is the backstop when the teardown fails.
 
+<a id="iac-ssh"></a>
+
 ### SSH keys
 
 Each SSH key is an IAM resource.
 `ssh_key_ids` is required on the metal server, and a change to it forces a reinstall.
 Rescue mode authenticates with the same keys.
 The runbook must record which key reaches which host.
+
+<a id="iac-except"></a>
 
 ## Resources outside OpenTofu
 
@@ -542,6 +576,8 @@ The bootstrap runbook records each one.
 | The train API key | A managed key writes its secret to state | CI, per campaign |
 | An OpenBSD OS install on a metal server | No API path exists | A human, per install |
 
+<a id="iac-prereq"></a>
+
 ## Prerequisites
 
 These human acts precede the first apply.
@@ -557,6 +593,8 @@ No credential replaces them.
 | A live price read | The GPU and storage prices are unverified after 2026-06-01 |
 | The GPU fallback analysis, with `scw instance server-type list` | The datasheet is not a complete offer list |
 | The marketplace label of the GPU OS image | The train stack resolves the image by label |
+
+<a id="iac-spend"></a>
 
 ## Spend guardrails
 
@@ -629,6 +667,8 @@ The watchdog must report, and must not destroy, a resource with no `ttx:managed`
 The watchdog must report a state lock older than two hours.
 The watchdog must never touch a resource tagged `ttx:lifecycle=persistent`.
 
+<a id="iac-teardown"></a>
+
 ## Teardown
 
 `tofu destroy` alone is not a teardown.
@@ -646,6 +686,8 @@ A human removes it.
 A teardown of the whole project runs in this order: `train`, then `dev`, then `image`,
 then `persistent`. A destroy of `persistent` surrenders four globally unique bucket
 names. Only a human runs it.
+
+<a id="iac-tasks"></a>
 
 ## Task runner
 
@@ -684,6 +726,8 @@ Do not hardcode a price in the repository.
 The runbook must state how a recipe reaches the GPU instance.
 `just train cpt` runs on the instance, and the transport is part of the deterministic
 entry point that D8 requires.
+
+<a id="iac-ci"></a>
 
 ## CI
 
@@ -733,20 +777,3 @@ Audit Trail does not cover Object Storage, Block Storage, or Billing.
 
 A human can start any stack action with a manual workflow dispatch.
 The spend guardrails bound every workflow.
-
-## Open points
-
-Each point below needs evidence that no reachable source gives.
-The bootstrap runbook closes each one.
-
-1. **Prices.** No GPU price and no Object Storage price could be read after the revision
-   of 2026-06-01. The Elastic Metal prices in this document were read on 2026-06-11 from
-   a recorded API response.
-   The cost of traffic between an instance and a bucket in the same region is unknown,
-   and it is the largest unpriced item in the project.
-   The live price read in “Prerequisites” closes this point.
-2. **State encryption.** The OpenTofu encryption key providers are unverified.
-   Read the OpenTofu encryption documentation before you write the backend block.
-3. **The budget singleton.** The Billing API returns a list of budgets, and no source
-   says that a second create fails.
-   Import an existing budget before the first apply of `infra/persistent`.

@@ -4,7 +4,8 @@ Date: 2026-08-03. Scope: `spec/harness.md`, with decision D7 in `spec/decisions.
 `spec/risks.md`. Method: a design review of the specification against the OpenBSD
 privilege-separation idiom.
 No harness code exists yet, so each finding targets the specification.
-“Line” is the line in the current `spec/harness.md`.
+“Line” is the line in `spec/harness.md` at commit
+`077dfa9d84942660e4b544a6a9ccd473c0e89710`.
 
 ## 1. Summary
 

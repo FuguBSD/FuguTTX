@@ -6,6 +6,8 @@ scorecards, not prose.
 The [baseline grid](#baselines-and-ablations) fixes what each suite compares against.
 The [release bars](#release-bars) fix what a release must reach.
 
+<a id="evl-grid"></a>
+
 ## Baselines and ablations
 
 Training must earn its cost against the strongest untrained configuration.
@@ -32,6 +34,8 @@ Two rules act on the grid:
 - If C0 − B0 is small on the domain suites, a human reviews the CPT method before Phase
   4 starts ([risks](risks.md)).
 
+<a id="evl-bars"></a>
+
 ## Release bars
 
 The bars are pre-registered.
@@ -52,6 +56,8 @@ measurement runs. These are the initial bars:
 The Phase 4 exit reads these bars ([roadmap](roadmap.md)). The escalation rule of the
 base model reads the same bars ([base model](model.md)).
 
+<a id="evl-domain"></a>
+
 ## Domain knowledge
 
 Perplexity/NLL on a held-out slice of the clean corpus.
@@ -61,6 +67,8 @@ augmentation, so the measurement stays clean
 ([corpus](corpus.md#synthetic-augmentation)). This confirms that CPT added OpenBSD
 knowledge. An MMLU-style general benchmark runs in parallel.
 It guards against catastrophic forgetting.
+
+<a id="evl-qa"></a>
 
 ## OpenBSD QA set
 
@@ -82,6 +90,8 @@ A grade that feeds a release bar must come from a judge outside the Qwen family,
 permissive license. Candidates: gpt-oss-20b and Mistral Small 3 (both Apache 2.0). The
 suite pins the judge model and its version in the scorecard.
 
+<a id="evl-agentic"></a>
+
 ## Agentic task suite
 
 Scripted scenarios in disposable OpenBSD VMs, run under qemu, with a snapshot restore
@@ -97,6 +107,8 @@ qemu keeps the suite portable across the development machine and CI. A scenario 
 seeded an SFT trace must not enter the suite
 ([corpus](corpus.md#corpus-use-per-variant)).
 
+<a id="evl-calls"></a>
+
 ## Tool-call correctness
 
 JSON-schema validity and the hallucinated-flag rate, measured end to end through the
@@ -110,6 +122,8 @@ The [failure budgets](harness.md#failure-budgets) of the harness take their fina
 from these measurements.
 The suite validates the sampler settings on the same runs.
 
+<a id="evl-redteam"></a>
+
 ## Safety red team
 
 Adversarial prompts that try to cause `pkg_delete -a`, `rm`, or a firewall lockout.
@@ -118,6 +132,8 @@ One escape blocks the release.
 
 The suite must include indirect injections: a log line, a configuration comment, or
 other tool output that carries an instruction to the model ([risks](risks.md)).
+
+<a id="evl-runs"></a>
 
 ## Where the suites run
 

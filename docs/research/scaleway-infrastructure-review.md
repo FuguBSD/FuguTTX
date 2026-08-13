@@ -30,7 +30,8 @@ The research changes five things about the specification.
 ## 2. Corrections
 
 Order is by severity.
-“Line” is the line in the current `spec/infrastructure.md`.
+“Line” is the line in `spec/infrastructure.md` at commit
+`077dfa9d84942660e4b544a6a9ccd473c0e89710`.
 
 | # | Line | Current text | Corrected text | Evidence |
 | --- | --- | --- | --- | --- |

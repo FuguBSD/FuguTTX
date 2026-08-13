@@ -1,5 +1,7 @@
 # Harness
 
+<a id="hrn-split"></a>
+
 The harness is the Perl software that operates the tool loop of the TTX agent on
 OpenBSD. Only the harness executes commands.
 The model only proposes.
@@ -19,6 +21,8 @@ This split gives privilege separation in two directions.
 The model can reach `doas` only through the fixed protocol of the executor.
 The operator account holds no doas rules, and it cannot run the privileged commands
 directly.
+
+<a id="hrn-lang"></a>
 
 ## Language constraint
 
@@ -46,6 +50,8 @@ The harness frames each internal message as a length-prefixed `JSON::PP` record 
 A framing defect raises an exception.
 It does not corrupt the heap.
 
+<a id="hrn-perl"></a>
+
 ### Perl execution discipline
 
 Perl can reach a shell through some call forms.
@@ -59,6 +65,8 @@ These rules are normative, and the CI check enforces them:
 - Load and exercise every module before the process pledges.
   A lazy `require` after `pledge(2)` needs `rpath`. Its absence kills the process with
   `SIGABRT`.
+
+<a id="hrn-arch"></a>
 
 ## Architecture
 
@@ -95,6 +103,8 @@ minimal pledge.
 
 The daemon serves one interactive session at a time, synchronously.
 Base Perl has no event library, and this design does not need one.
+
+<a id="hrn-proc"></a>
 
 ## The three processes of ttxd
 
@@ -153,6 +163,8 @@ The table gives the pledge sets for the agent loop.
 The client `ttx` pledges `stdio tty unix` and unveils only the socket path.
 A defect in the client is worth nothing.
 
+<a id="hrn-socket"></a>
+
 ## Control socket
 
 `ttxd` listens on `/var/run/ttxd.sock`. The socket has owner `_ttx`, group `ttxop`, and
@@ -164,41 +176,47 @@ Base Perl reads it with `getsockopt` and `unpack`, so no compiled module is nece
 The field order differs from the Linux `struct ucred`, so do not copy a Linux example.
 The session transcript attributes each session and each confirmation to that user id.
 
+<a id="hrn-confirm"></a>
+
 ## Confirmation protocol
 
-The dry-run gate is a protocol, not a prompt:
+The dry-run gate is a protocol, not a prompt.
+These rules define it:
 
-1. The parent gives each pending mutation an action identifier.
-2. The parent computes a SHA-256 digest with `Digest::SHA`. The digest covers the action
-   identifier, the exact argument vector, the candidate file content, and the dry-run
-   output.
-3. The client shows the dry-run output and the diff to the operator.
-4. A confirmation message must carry the action identifier and the digest.
-5. A confirmation with a stale identifier or a wrong digest fails closed.
-6. A confirmation must come from the same peer user id that saw the dry run.
-7. A pending mutation has a timeout.
-   After the timeout, it fails closed.
-8. When a session disconnects, its pending mutations die.
+- **HRN-CONFIRM-1.** The parent gives each pending mutation an action identifier.
+- **HRN-CONFIRM-2.** The parent computes a SHA-256 digest with `Digest::SHA`. The digest
+  covers the action identifier, the exact argument vector, the candidate file content,
+  and the dry-run output.
+- **HRN-CONFIRM-3.** The client shows the dry-run output and the diff to the operator.
+- **HRN-CONFIRM-4.** A confirmation message must carry the action identifier and the
+  digest.
+- **HRN-CONFIRM-5.** A confirmation with a stale identifier or a wrong digest fails
+  closed.
+- **HRN-CONFIRM-6.** A confirmation must come from the same peer user id that saw the
+  dry run. This rule depends on the control socket ([HRN-SOCKET](#hrn-socket)).
+- **HRN-CONFIRM-7.** A pending mutation has a timeout.
+  After the timeout, it fails closed.
+- **HRN-CONFIRM-8.** When a session disconnects, its pending mutations die.
+- **HRN-CONFIRM-9.** The parent holds the candidate content in memory.
+  Before it installs the file, it verifies the content against the digest.
+  It writes the held bytes to a temporary file, and it then renames the file into place.
+  The rename is atomic, so a crash cannot leave a truncated target.
+- **HRN-CONFIRM-10.** The candidate directory has mode 0700 and owner `_ttx`. Only the
+  parent holds an unveil of the candidate directory, so no other process can rewrite a
+  candidate between the confirmation and the install.
 
 The digest binds the confirmation to what the system will do, not only to what the
-operator saw. The parent holds the candidate content in memory.
-Before it installs the file, it verifies the content against the digest.
-It writes the held bytes to a temporary file, and it then renames the file into place.
-The rename is atomic, so a crash cannot leave a truncated target.
-The candidate directory has mode 0700 and owner `_ttx`, and only the parent holds an
-unveil of it, so no other process can rewrite a candidate between the confirmation and
-the install.
-
-A confirmation therefore applies only to the exact action that the operator saw.
-No pending action outlives its session.
+operator saw.
+A confirmation therefore applies only to the exact action that the operator
+saw. No pending action outlives its session.
 The daemon serves one session at a time, so a stalled confirmation must not block the
-daemon. The timeout of step 7 releases it.
+daemon. The timeout of HRN-CONFIRM-7 releases it.
 
 ## Tools
 
 Each tool is a function with a JSON schema.
 
-**Read-only tools:**
+<a id="hrn-tool-ro"></a>**Read-only tools:**
 
 - Read configuration files under unveiled paths: `/etc/pf.conf`, `/etc/sysctl.conf`,
   `/etc/rc.conf.local`.
@@ -215,7 +233,7 @@ The parent runs most read-only tools directly as `_ttx`, with no doas.
 The `pfctl -s rules|states|info` reads therefore get exact-argument doas rules.
 The argument set is finite, so an exact rule is safe here.
 
-**Gated mutations — dry run first, always:**
+<a id="hrn-tool-gate"></a>**Gated mutations — dry run first, always:**
 
 - Configuration edits: write a candidate file, show the diff, and validate
   (`pfctl -nf pf.conf.candidate`). Install the file only after an explicit confirmation.
@@ -230,8 +248,8 @@ Each gated mutation records its rollback path before it applies: the previous fi
 content, the previous sysctl value, or the previous service state.
 The rollback record enters the session transcript.
 
-**The pf commit-confirm rule.** A bad ruleset can cut the connection that carries the
-confirmation, and `pfctl` has no built-in revert.
+<a id="hrn-pf-commit"></a>**The pf commit-confirm rule.** A bad ruleset can cut the
+connection that carries the confirmation, and `pfctl` has no built-in revert.
 A confirmed mistake is not an attack, so no gate stops it.
 A `pf.conf` install is therefore a two-step commit:
 
@@ -250,16 +268,18 @@ A `pf.conf` install is therefore a two-step commit:
 The revert is the one mutation that runs without a fresh confirmation.
 It only restores the ruleset that was live before the install.
 
-**The terminal tool:**
+<a id="hrn-tool-report"></a>**The terminal tool:**
 
 - `report` ends the step, and it carries the answer of the model to the operator.
   It executes no command.
   It is always in the tool table, because the grammar forces a tool call on each turn
   (see [the agent loop](#the-agent-loop)).
 
-Each tool has one row in a static metadata table.
+<a id="hrn-tool-table"></a>Each tool has one row in a static metadata table.
 The table generates both the tool line of the system prompt and the JSON schema.
 Thus the prompt and the policy cannot drift.
+
+<a id="hrn-loop"></a>
 
 ## The agent loop
 
@@ -271,29 +291,31 @@ while-loop. Two terms are fixed:
 
 Five rules control the loop:
 
-1. **The transcript drives the loop.** The parent appends each event to the session
-   transcript before it acts on the event.
-   At the top of each turn, the parent derives its next action from the transcript.
-   It keeps no loop state outside the transcript.
-   A restarted daemon can therefore resume a session from the transcript alone.
-2. **Budgets are checked before each model call.** The
-   [failure budgets](#failure-budgets) table defines each budget.
-3. **A turn has exactly one tool call.** The llama-server grammar enforces the count.
-   The parent executes tool calls strictly serially.
-   The loop has no subagents, no nesting, and no parallel execution.
-4. **The terminal tool ends the step.** The model ends a step with one `report` call
-   that carries its answer.
-   The grammar forces a tool call on each turn, so a reply without a call cannot end the
-   step. The grammar and the stop condition are therefore one joint design.
-   When the turn budget is exhausted, the harness makes one final model call that
-   permits only the `report` tool.
-   Thus each step ends with a report.
-5. **Errors divide into two classes.** A harness or transport failure is fatal: the step
-   stops, and the operator sees the error.
-   Model misbehavior — a malformed call, an unknown tool, invalid arguments, an empty
-   response, a repeated call — becomes a tool result with precise error text, and it
-   spends budget from the failure table.
-   Model misbehavior must not crash the loop.
+- **HRN-LOOP-1 — The transcript drives the loop.** The parent appends each event to the
+  session transcript before it acts on the event.
+  At the top of each turn, the parent derives its next action from the transcript.
+  It keeps no loop state outside the transcript.
+  A restarted daemon can therefore resume a session from the transcript alone.
+- **HRN-LOOP-2 — Budgets are checked before each model call.** The
+  [failure budgets](#failure-budgets) table defines each budget.
+- **HRN-LOOP-3 — A turn has exactly one tool call.** The llama-server grammar enforces
+  the count. The parent executes tool calls strictly serially.
+  The loop has no subagents, no nesting, and no parallel execution.
+- **HRN-LOOP-4 — The terminal tool ends the step.** The model ends a step with one
+  `report` call that carries its answer.
+  The grammar forces a tool call on each turn, so a reply without a call cannot end the
+  step. The grammar and the stop condition are therefore one joint design.
+  When the turn budget is exhausted, the harness makes one final model call that permits
+  only the `report` tool.
+  Thus each step ends with a report.
+- **HRN-LOOP-5 — Errors divide into two classes.** A harness or transport failure is
+  fatal: the step stops, and the operator sees the error.
+  Model misbehavior — a malformed call, an unknown tool, invalid arguments, an empty
+  response, a repeated call — becomes a tool result with precise error text, and it
+  spends budget from the failure table.
+  Model misbehavior must not crash the loop.
+
+<a id="hrn-cancel"></a>
 
 ### Cancellation
 
@@ -302,9 +324,9 @@ On a cancel, the parent must not start a new model call.
 The parent kills the process group of a running tool.
 The parent appends a synthesized error result for each unanswered tool call.
 Thus no tool call in the transcript lacks a result.
-The abort of an in-flight model generation is open design work in Phase 6
-([roadmap](roadmap.md)): signal routing across the processes, and `alarm()` around a
-blocked read.
+This specification does not fix the abort mechanism for an in-flight model generation.
+
+<a id="hrn-live"></a>
 
 ### Liveness
 
@@ -314,36 +336,39 @@ started, tool started (with the tool name), and confirmation pending.
 These events are transient.
 They do not enter the transcript.
 
+<a id="hrn-invoke"></a>
+
 ## Model invocation
 
 Each turn makes one blocking chat-completions request.
 The harness does not stream.
 
-- **Sampling.** Temperature 0 for tool-driven turns.
+- **HRN-INVOKE-1 — Sampling.** Temperature 0 for tool-driven turns.
   This value is a starting point.
   The evaluation suite validates the sampler settings ([evaluation](evaluation.md)).
-- **Transport retry.** At most 3 retries per request, with exponential backoff (2 s, 4
-  s, 8 s), between the loop and llama-server.
+- **HRN-INVOKE-2 — Transport retry.** At most 3 retries per request, with exponential
+  backoff (2 s, 4 s, 8 s), between the loop and llama-server.
   Every retry budget must have a cap.
-- **Timeout.** The HTTP timeout is fixed.
-  Its value derives from the Phase 2 measurements: the maximum output tokens divided by
-  the measured tokens/s, plus the prompt-processing time, with margin.
+- **HRN-INVOKE-3 — Timeout.** The HTTP timeout is fixed.
+  Its value derives from measurement: the maximum output tokens divided by the measured
+  tokens/s, plus the prompt-processing time, with margin.
   Until the measurement exists, the value is 600 s.
-- **Prompt-cache discipline.** CPU prompt processing is the slow axis, and llama-server
-  reuses the KV cache for a byte-stable prefix.
+- **HRN-INVOKE-4 — Prompt-cache discipline.** CPU prompt processing is the slow axis,
+  and llama-server reuses the KV cache for a byte-stable prefix.
   The tool list sorts by name.
   No timestamp in the prompt is finer than the hour.
   Within a step, the prompt only appends.
   It never rewrites.
-- **Token budgeting.** The harness must know the prompt size before each send.
-  Base Perl has no tokenizer.
+- **HRN-INVOKE-5 — Token budgeting.** The harness must know the prompt size before each
+  send. Base Perl has no tokenizer.
   The llama-server `/tokenize` endpoint is the candidate mechanism.
-  Phase 6 confirms it ([roadmap](roadmap.md)).
-- **No context shift.** llama-server must run with context shift off.
+- **HRN-INVOKE-6 — No context shift.** llama-server must run with context shift off.
   A silent context shift breaks the invariant that the transcript equals the model
   context, and the audit design depends on that invariant.
   On overflow, the harness compacts, or it stops with an error (see
   [context management](#context-management)).
+
+<a id="hrn-prompt"></a>
 
 ## Prompt assembly
 
@@ -362,6 +387,8 @@ transcript. A fixed order maximizes prefix-cache reuse.
   and the re-prompt texts are training-time artifacts.
   The SFT trace generator must use the same artifacts ([training](training.md)). A
   change to one of them is a training-data change, not only a harness change.
+
+<a id="hrn-skills"></a>
 
 ## Skills
 
@@ -391,6 +418,8 @@ The harness must not execute a command that this text names.
 Only a model-proposed tool call, through every gate, reaches execution.
 An instruction file must not become an execution channel.
 
+<a id="hrn-calls"></a>
+
 ## Tool-call handling
 
 The grammar constrains model output at sample time.
@@ -416,6 +445,8 @@ Validation still runs in full, because a lying `llama-server` can bypass the gra
   A free-text fallback parser must not exist.
   If the grammar fails, that is a defect to fix, not to parse around.
 
+<a id="hrn-trunc"></a>
+
 ## Tool output truncation
 
 Two limits cap each tool output toward the model: 100 lines and 4,096 bytes, whichever
@@ -427,6 +458,8 @@ The transcript record keeps the full output, up to a hard cap of 65,536 bytes pe
 record. Above the hard cap, the record also keeps the head and the tail, with a marker.
 No spool directory exists.
 Thus the parent unveil table stays a complete enumeration.
+
+<a id="hrn-budgets"></a>
 
 ## Failure budgets
 
@@ -451,6 +484,8 @@ A detected repetition has one response: stop the step, report to the operator,
 and fail closed. The harness must not recover automatically, and it must not refuse one
 call and continue. The operator decides whether to continue.
 
+<a id="hrn-context"></a>
+
 ## Context management
 
 The model window is a projection, derived at read time from the append-only transcript.
@@ -471,16 +506,15 @@ supersedes, and the projection skips the superseded records.
   Within a step, the prompt only appends (see [model invocation](#model-invocation)).
   The one exception is the mid-step overflow compaction in the failure table.
 
+<a id="hrn-transcript"></a>
+
 ## Session transcript
 
 One append-only JSONL file per session is the session record:
 `/var/log/ttx/session-<id>.jsonl`. The directory `/var/log/ttx` has owner `_ttx` and
-mode 0700. Each file has mode 0600. This layout replaces a single audit-log file.
-The transcript is the audit log.
+mode 0700. Each file has mode 0600. The transcript is the audit log.
 A session file never changes after the session ends, so a retention job can remove old
-files safely. The append discipline is open design work in Phase 6
-([roadmap](roadmap.md)): the atomicity of one record write on a crash, and the fsync
-policy. No surveyed harness answers these questions.
+files safely. This specification does not fix the append discipline.
 
 - **Envelope.** Each record is one JSON object on one line, with a timestamp, a
   monotonic ordinal, a type, and a payload.
@@ -508,10 +542,11 @@ policy. No surveyed harness answers these questions.
 - **Syslog duplicate.** The parent writes each record to `syslog(3)` as a redacted
   summary. The key=value field names reuse the OpenTelemetry `gen_ai.*` vocabulary (for
   example `gen_ai.usage.input_tokens`), without the OTLP transport.
-- **Raw wire log.** The model process appends each raw request body and each raw
-  response to a per-session wire log, `/var/log/ttx/wire-<id>.jsonl`. The parent opens
-  the file in append mode before the fork, and the model process inherits the
-  descriptor. The parent starts a fresh model process for each session.
+- <a id="hrn-wirelog"></a>**Raw wire log.** The model process appends each raw request
+  body and each raw response to a per-session wire log, `/var/log/ttx/wire-<id>.jsonl`.
+  The parent opens the file in append mode before the fork, and the model process
+  inherits the descriptor.
+  The parent starts a fresh model process for each session.
   Thus each session has its own wire-log descriptor, its own connection, and a fresh
   address-space layout.
   A write to an open descriptor sits inside the `stdio` promise, so the model-process
@@ -525,17 +560,17 @@ policy. No surveyed harness answers these questions.
 
 Safety is first-class, not optional.
 
-- **pledge/unveil, per process.** Each process pledges only the promises of its role,
-  and unveils only its own paths.
-  The process table above is normative.
+- <a id="hrn-safe-pledge"></a>**pledge/unveil, per process.** Each process pledges only
+  the promises of its role, and unveils only its own paths.
+  The process table of [HRN-PROC](#hrn-proc) is normative.
   No post-setup pledge holds `inet`. The model process uses `inet` only during setup, to
   open its one connection, and it then drops to `stdio`. `proc exec` exists only in the
   parent. A study of these mitigations across 19 OpenBSD releases shows they are
   practical (Ruohonen, Sierszecki & Tiwari, arXiv:2607.03056).
 
-- **doas through fixed-function C wrappers.** A privileged mutation has a dynamic
-  argument: an arbitrary package name, a sysctl value, or a service name.
-  `doas.conf(5)` has no argument wildcard.
+- <a id="hrn-safe-wrap"></a>**doas through fixed-function C wrappers.** A privileged
+  mutation has a dynamic argument: an arbitrary package name, a sysctl value, or a
+  service name. `doas.conf(5)` has no argument wildcard.
   An exact-argument rule covers one value only.
   A rule with no `args` clause permits every argument, so `pkg_add` would accept any
   URL, and `pfctl -f` would load any file.
@@ -562,11 +597,11 @@ Safety is first-class, not optional.
   The audit of a wrapper is exhaustive.
   All other commands fail closed.
 
-- **Dry run by default.** A destructive action occurs only after a successful dry run
-  and an explicit confirmation through the confirmation protocol.
-  No flag can turn this off.
+- <a id="hrn-safe-dryrun"></a>**Dry run by default.** A destructive action occurs only
+  after a successful dry run and an explicit confirmation through the confirmation
+  protocol. No flag can turn this off.
 
-- **Audit.** The session transcript is the audit record (see
+- <a id="hrn-safe-audit"></a>**Audit.** The session transcript is the audit record (see
   [session transcript](#session-transcript)). The parent appends each prompt, tool call,
   executed command, exit status, and confirmation to the transcript of the session.
   Each confirmation record holds the peer user id and the digest.
@@ -579,14 +614,14 @@ Safety is first-class, not optional.
   A compromised `_ttx` parent can still forge a future record, and it can stop logging,
   but it cannot rewrite a record that already left the host.
 
-- **Audit confidentiality.** The audit content can hold a secret: a `pf` diff, a
-  WireGuard key, or a sysctl value.
+- <a id="hrn-safe-confid"></a>**Audit confidentiality.** The audit content can hold a
+  secret: a `pf` diff, a WireGuard key, or a sysctl value.
   The transcript files and the wire logs have mode 0600 and owner `_ttx`. The wire log
   holds everything the model saw, so it needs the same protection as the transcript.
   A remote forward crosses the network, so the operator must weigh that leak before the
   operator enables it.
 
-- **Correct privilege drop.** `rc.d` starts `ttxd` as root.
+- <a id="hrn-safe-drop"></a>**Correct privilege drop.** `rc.d` starts `ttxd` as root.
   The parent binds the control socket, and it verifies the log directory (owner `_ttx`,
   mode 0700). It then drops privilege in order: it clears the supplementary groups, it
   sets the group id, and it sets the user id to `_ttx`. It verifies each id after the
@@ -595,8 +630,8 @@ Safety is first-class, not optional.
   A wrong order leaves a residual privilege.
   After the drop, no `ttxd` process runs as root.
 
-- **Untrusted display.** The client shows dry-run output and diffs that derive from
-  model-influenced bytes.
+- <a id="hrn-safe-display"></a>**Untrusted display.** The client shows dry-run output
+  and diffs that derive from model-influenced bytes.
   A terminal escape sequence in that data can rewrite the operator’s view, and it can
   hide the real change.
   The client must replace each byte outside a strict printable set before display.
@@ -606,11 +641,13 @@ Safety is first-class, not optional.
   The client must cap the diff size, and it must guard against a scroll that hides a
   hunk. The displayed diff comes from the parent, never from model text.
 
-- **The internal record channel is a trust boundary.** A parser bug can compromise the
-  model process, or a lying `llama-server` can feed it.
+- <a id="hrn-safe-record"></a>**The internal record channel is a trust boundary.** A
+  parser bug can compromise the model process, or a lying `llama-server` can feed it.
   The parent must treat every internal record as hostile.
   The parent validates each record against the tool schema and the policy, and it
   applies each gate, whatever the record claims.
+
+<a id="hrn-fetch"></a>
 
 ## Model fetch
 
@@ -626,6 +663,8 @@ the next release. A release thus validates the next key without a new out-of-ban
 A verified artifact must not change between the fetch and the load.
 The weights directory therefore has owner `_ttx`, and its mode denies write to `_ttxllm`
 and to other users. `ttx fetch` re-checks the signature at load time.
+
+<a id="hrn-pkg"></a>
 
 ## Package
 

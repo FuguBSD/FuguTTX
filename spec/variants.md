@@ -2,6 +2,8 @@
 
 TTX releases follow **user personas, not data slices**.
 
+<a id="var-persona"></a>
+
 ## Personas
 
 - **Operator** (TTX 1): the sysadmin who configures, maintains, and debugs an OpenBSD
@@ -12,6 +14,8 @@ The boundary is sharp.
 To *use* packages (`pkg_add`, `pkg_delete`, `pkg_info`) is operator work.
 It stays in TTX 1. To *make and update* ports is contributor work.
 It goes in a variant.
+
+<a id="var-overlay"></a>
 
 ## Overlays, not forks
 
@@ -34,6 +38,8 @@ Qwen2.5-Coder-7B (Apache 2.0, pretrained on 92 programming languages, C and Perl
 included) is the strongest known candidate for a code fork.
 Its 3B sibling has the restrictive Qwen-Research license and is excluded.
 
+<a id="var-promote"></a>
+
 ## Promotion rule
 
 A variant is a candidate until evaluation earns it a release.
@@ -49,6 +55,8 @@ All three conditions must hold, measured against versioned evaluation suites
 If a candidate fails condition 2, the generalist covers the persona and no variant
 ships. That result is a success, not a failure.
 
+<a id="var-cand"></a>
+
 ## Candidates
 
 | Candidate | Persona and scope | Evaluation story |
@@ -60,6 +68,8 @@ The two candidates overlap where code work touches the ports tree.
 If their evaluation suites show large overlap, merge them into one contributor variant.
 Do not ship two models that a user must select between.
 On a 16 GB machine, each added GGUF file is real friction.
+
+<a id="var-names"></a>
 
 ## Names
 

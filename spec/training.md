@@ -1,5 +1,7 @@
 # Training
 
+<a id="trn-inst"></a>
+
 ## Instances
 
 Scaleway, in zone `fr-par-2` ([infrastructure](infrastructure.md)). On-demand billing,
@@ -32,6 +34,8 @@ range up to 14B. Multi-GPU is not necessary.
 
 ## Method
 
+<a id="trn-cpt"></a>
+
 ### CPT pass
 
 The CPT pass carries the primary OpenBSD knowledge of the model (D4). QLoRA continued
@@ -40,6 +44,8 @@ pretraining trains on the redistributable-clean corpus plus its
 1–2 epochs, low learning rate.
 General-domain replay data is mixed in to prevent catastrophic forgetting.
 The replay data follows the [replay rules](corpus.md#replay-data) of the corpus.
+
+<a id="trn-aug"></a>
 
 ### Augmentation generation
 
@@ -55,6 +61,8 @@ The augmentation targets three to five accepted restatements per source chunk.
 The data rules of the augmentation — the lanes, the tags, and the evaluation splits —
 are in the [corpus](corpus.md#synthetic-augmentation).
 
+<a id="trn-sft"></a>
+
 ### SFT pass
 
 Supervised fine-tuning from the CPT checkpoint, on two data kinds:
@@ -69,6 +77,8 @@ Supervised fine-tuning from the CPT checkpoint, on two data kinds:
 The corpus components that seed the scenarios of each variant are specified in the
 [corpus](corpus.md#corpus-use-per-variant).
 
+<a id="trn-traces"></a>
+
 ### Trace generation
 
 `ttx-synth` drives the same **Qwen3-32B teacher** as the
@@ -81,8 +91,8 @@ Traces target 8K tokens or less, to match the inference context budget.
 **The teacher proposes, and a rollout executes.** The rollout driver runs on the
 development host.
 It rolls each trace out against a disposable OpenBSD guest, through the
-harness slice of Phase 2 ([roadmap](roadmap.md)), with a snapshot restore between
-traces. Each tool result in a trace is the real output of the guest.
+harness slice ([roadmap](roadmap.md)), with a snapshot restore between traces.
+Each tool result in a trace is the real output of the guest.
 A teacher-written observation must not enter a trace.
 A trace with a fabricated observation teaches the model to expect fabricated systems.
 The driver reaches the teacher over an SSH tunnel to the train instance, and the vLLM
@@ -98,6 +108,8 @@ Each trace must end its step with the terminal `report` tool.
 The trace set must include recovery examples: a malformed call, its precise error
 result, and the corrected call.
 
+<a id="trn-exec"></a>
+
 ### Execution
 
 Training runs in the published Axolotl CUDA Docker image on the instance.
@@ -106,6 +118,8 @@ toolkit. All Axolotl YAML configurations live in `packages/ttx-train/configs/`, 
 version control. A run is `just train cpt` or `just train sft` against a provisioned
 instance. Checkpoints synchronize to Object Storage after each epoch.
 Thus instance destruction cannot lose work.
+
+<a id="trn-budget"></a>
 
 ## Budget
 

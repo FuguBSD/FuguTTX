@@ -1,5 +1,7 @@
 # Licensing and Release
 
+<a id="lic-lic"></a>
+
 ## Licenses
 
 | Component | License | Notes |
@@ -7,6 +9,8 @@
 | Weights | **Apache 2.0** | Inherited cleanly from the base model ([base model](model.md)). A base that forces a restrictive derivative license is excluded by policy — for TTX 1 and for each variant. |
 | Code (Python packages, Perl harness, OpenTofu) | **ISC** | The preferred OpenBSD license for new code (`/usr/share/misc/license.template`). Functionally equivalent to two-clause BSD. |
 | Clean corpus | ISC/BSD, per source | Redistributable with attribution and notices. |
+
+<a id="lic-data"></a>
 
 ## Datasets
 
@@ -30,11 +34,15 @@ They must not enter the training data.
 Their raw text must not be redistributed.
 The license tags of the pipeline enforce the lanes mechanically ([corpus](corpus.md)).
 
+<a id="lic-cards"></a>
+
 ## Model cards
 
 Each release has a model card.
 It documents the base model, the corpus composition, the training method, the evaluation
 results, and the known limitations.
+
+<a id="lic-release"></a>
 
 ## Release integrity
 

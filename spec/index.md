@@ -34,15 +34,40 @@ When you make a plan:
    Each phase lists its scope, its exit criteria, and its documents.
 3. Read the listed documents.
    They give the requirements for the plan.
+4. Cite each requirement by its unit ID, for example `HRN-CONFIRM`. A plan lists the
+   units that it implements and the units that it defers.
+   The [implementation register](status.md) lists each unit and its state.
+5. When your change implements a unit, or a part of a unit, set the state of the unit in
+   the [implementation register](status.md) in the same change.
 
 ## Conventions
 
 - All documents use ASD-STE100 Simplified Technical English.
+
 - “Must” shows a requirement.
   “Must not” shows a prohibition.
   “Can” shows a capability or an option.
+
 - Prices and model data show the state at the time of publication.
   Confirm them before each campaign.
+
+- A unit ID names one unit of one document, for example `HRN-CONFIRM`. A rule ID names
+  one rule inside a unit, for example `HRN-CONFIRM-6`. An HTML anchor with the
+  lower-case ID marks each unit in its document.
+  An ID never changes, and a retired ID is never reused.
+  The document codes are fixed:
+
+| Code | Document | Code | Document |
+| --- | --- | --- | --- |
+| HRN | [harness.md](harness.md) | INF | [inference.md](inference.md) |
+| IAC | [infrastructure.md](infrastructure.md) | MDL | [model.md](model.md) |
+| COR | [corpus.md](corpus.md) | VAR | [variants.md](variants.md) |
+| TRN | [training.md](training.md) | REP | [repository.md](repository.md) |
+| EVL | [evaluation.md](evaluation.md) | AGT | [agents.md](agents.md) |
+| LIC | [licensing.md](licensing.md) | RSK | [risks.md](risks.md) |
+- The [implementation register](status.md) is the only home of implementation state.
+  Only the [roadmap](roadmap.md) and the register state when work occurs.
+  Every other document describes the target design, in the current state only.
 
 ## Documents
 
@@ -84,4 +109,5 @@ When you make a plan:
 | --- | --- |
 | [Licensing and release](licensing.md) | Licenses, dataset cards, model cards, and release integrity. |
 | [Roadmap](roadmap.md) | The nine phases and their exit criteria. |
+| [Implementation register](status.md) | Each unit of the specification and its implementation state. |
 | [Risks](risks.md) | Risks and their mitigations. |

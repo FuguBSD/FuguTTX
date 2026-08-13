@@ -2,6 +2,8 @@
 
 TTX 1 trains from **Qwen3-4B**.
 
+<a id="mdl-crit"></a>
+
 ## Selection criteria
 
 The base model must have all of these properties:
@@ -11,6 +13,8 @@ The base model must have all of these properties:
 - Credible tool-call ability.
 - Good C and Perl code ability.
 - First-class support in Axolotl and llama.cpp.
+
+<a id="mdl-why"></a>
 
 ## Why Qwen3-4B
 
@@ -22,6 +26,8 @@ The base model must have all of these properties:
   This is sufficient for sysadmin tasks with retrieved man-page context.
 - **Ecosystem:** first-class support in Axolotl, HF TRL, and llama.cpp.
 
+<a id="mdl-pin"></a>
+
 ## Revision pin and re-survey
 
 “Qwen3-4B” names a family line, and the line has revisions.
@@ -32,10 +38,12 @@ the original hybrid in non-thinking mode.
 That is exactly the TTX 1 configuration, so **Qwen3-4B-Instruct-2507 is the leading
 candidate revision**.
 
-Phase 2 re-surveys the Qwen line and pins the exact revision ([roadmap](roadmap.md)).
-The training configuration records the revision name and the weight hash.
-Model facts in this document show the state at the time of publication.
+The project re-surveys the Qwen line and pins the exact revision before any training
+spend ([roadmap](roadmap.md)). The training configuration records the revision name and
+the weight hash. Model facts in this document show the state at the time of publication.
 Confirm them at the re-survey.
+
+<a id="mdl-excl"></a>
 
 ## Excluded models
 
@@ -46,6 +54,8 @@ Confirm them at the re-survey.
 These licenses are not OSI-approved.
 They do not agree with the permissive-only culture of OpenBSD.
 
+<a id="mdl-esc"></a>
+
 ## Escalation rule
 
 TTX 1 can fail the [release bars](evaluation.md#release-bars) after reasonable iteration
@@ -54,6 +64,8 @@ If it does, change the base to **Qwen3-8B**. Qwen3-8B has the same license and 1
 context. Its CPU speed is approximately half of the 4B speed.
 The pipeline is size-agnostic.
 Only the configurations change.
+
+<a id="mdl-think"></a>
 
 ## Thinking mode
 
@@ -66,12 +78,16 @@ weaker of its two modes.
 A natively non-thinking revision removes that mismatch (see
 [Revision pin and re-survey](#revision-pin-and-re-survey)).
 
+<a id="mdl-fall"></a>
+
 ## Fallback models
 
 IBM Granite 3.x and SmolLM3-3B (both Apache 2.0) are the named fallbacks.
 Use them if the Qwen line becomes unavailable or unsuitable.
 SmolLM3 has fully open weights, data, and recipe.
 It is applicable to a “fully open” TTX variant.
+
+<a id="mdl-vbase"></a>
 
 ## Variant bases
 
