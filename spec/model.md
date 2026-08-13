@@ -38,9 +38,10 @@ the original hybrid in non-thinking mode.
 That is exactly the TTX 1 configuration, so **Qwen3-4B-Instruct-2507 is the leading
 candidate revision**.
 
-The project re-surveys the Qwen line and pins the exact revision before any training
-spend ([roadmap](roadmap.md)). The training configuration records the revision name and
-the weight hash. Model facts in this document show the state at the time of publication.
+The project re-surveys the Qwen line and pins the exact revision
+([roadmap](roadmap.md)). A training run must not start without the pin.
+The training configuration records the revision name and the weight hash.
+Model facts in this document show the state at the time of publication.
 Confirm them at the re-survey.
 
 <a id="mdl-excl"></a>

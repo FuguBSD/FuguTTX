@@ -56,7 +56,7 @@ directly, on perplexity and on the OpenBSD QA set, and the retrieval baseline bo
 value of training. If the delta is small, the recorded escalations are: a larger
 augmentation multiple, a higher adapter rank, or a full-parameter CPT run.
 Each escalation fits one H100 at the 4B size.
-A human reviews the method before the SFT campaign starts ([roadmap](roadmap.md)).
+A human must review the method ([evaluation](evaluation.md#baselines-and-ablations)).
 
 <a id="rsk-synth"></a>
 

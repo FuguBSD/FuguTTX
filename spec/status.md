@@ -2,8 +2,11 @@
 
 This register is the one record of implementation state.
 One row exists for each unit of the specification.
-Each row describes the present state only.
-A row must not carry a date, a plan name, or a reference to an earlier state.
+A unit is one design element of one specification document.
+The [conventions](index.md#conventions) define the unit IDs.
+Each row describes the current state only.
+A row must not carry a plan name or a reference to an earlier state.
+A note can carry the date of a recorded fact.
 
 ## States
 
@@ -12,20 +15,21 @@ A row must not carry a date, a plan name, or a reference to an earlier state.
 | open | No code implements the unit. |
 | partial | Code implements a part of the unit. The note names each absent part. |
 | done | Code implements the full unit. The note links the code or the tests. |
-| n-a | The unit is not implementable. It exists for citation only. |
+| n-a | No code can implement the unit. It exists for citation only. |
 
-The “Done by” column names the phase at whose exit the unit must have the state `done`.
-Early completion is permitted.
-An `n-a` unit has no “Done by” value.
+The “Done by” column names a phase of the [roadmap](roadmap.md).
+At the exit of that phase, the unit must have the state `done`. A unit can reach `done`
+before that phase. An `n-a` unit has no “Done by” value.
 
 ## Update protocol
 
 1. The change that implements a unit, or a part of a unit, sets the state of the unit in
    this register, in the same change.
-2. A `partial` note names each absent rule or part, and the unit that it needs.
+2. A `partial` note names each absent rule or part.
+   For each absent part, the note names the unit that the part needs.
 3. A `done` note holds at least one relative link to code or to tests.
 4. A change to the text of a `partial` or `done` unit updates the row of that unit in
-   the same change. The CI drift check enforces this.
+   the same change. The CI drift check enforces this rule.
 5. The human merge review compares the register diff with the code diff.
 
 ## Code roots
@@ -85,16 +89,16 @@ An `n-a` unit has no “Done by” value.
 | [HRN-TOOL-REPORT](harness.md#hrn-tool-report) | The terminal report tool | 2 | open |  |
 | [HRN-TOOL-TABLE](harness.md#hrn-tool-table) | The tool metadata table | 2 | open |  |
 | [HRN-LOOP](harness.md#hrn-loop) | The agent loop | 6 | open |  |
-| [HRN-CANCEL](harness.md#hrn-cancel) | Cancellation | 6 | open | The abort mechanism for an in-flight generation is not designed: signal routing across the processes, and `alarm()` around a blocked read. |
+| [HRN-CANCEL](harness.md#hrn-cancel) | Cancellation | 6 | open | The abort mechanism for an in-flight generation needs a design: signal routing across the processes, and `alarm()` around a blocked read. |
 | [HRN-LIVE](harness.md#hrn-live) | The liveness events | 6 | open |  |
-| [HRN-INVOKE](harness.md#hrn-invoke) | Model invocation | 6 | open | HRN-INVOKE-5 is not confirmed: the `/tokenize` mechanism needs validation against llama-server. |
+| [HRN-INVOKE](harness.md#hrn-invoke) | Model invocation | 6 | open | The `/tokenize` mechanism of HRN-INVOKE-5 needs validation against llama-server. |
 | [HRN-PROMPT](harness.md#hrn-prompt) | Prompt assembly | 6 | open |  |
 | [HRN-SKILLS](harness.md#hrn-skills) | Skills | 6 | open |  |
 | [HRN-CALLS](harness.md#hrn-calls) | Tool-call handling | 2 | open |  |
 | [HRN-TRUNC](harness.md#hrn-trunc) | Tool output truncation | 2 | open |  |
-| [HRN-BUDGETS](harness.md#hrn-budgets) | The failure budgets | 2 | open |  |
+| [HRN-BUDGETS](harness.md#hrn-budgets) | The failure budgets | 6 | open | The context-overflow row needs the compaction of HRN-CONTEXT. |
 | [HRN-CONTEXT](harness.md#hrn-context) | Context management | 6 | open |  |
-| [HRN-TRANSCRIPT](harness.md#hrn-transcript) | The session transcript | 6 | open | The append discipline is not designed: the atomicity of one record write on a crash, and the fsync policy. No surveyed harness answers these questions. |
+| [HRN-TRANSCRIPT](harness.md#hrn-transcript) | The session transcript | 6 | open | The append discipline needs a design: the atomicity of one record write on a crash, and the fsync policy. No surveyed harness answers these questions. |
 | [HRN-WIRELOG](harness.md#hrn-wirelog) | The raw wire log | 6 | open |  |
 | [HRN-SAFE-PLEDGE](harness.md#hrn-safe-pledge) | pledge and unveil, per process | 6 | open |  |
 | [HRN-SAFE-WRAP](harness.md#hrn-safe-wrap) | The fixed-function doas C wrappers | 6 | open |  |
@@ -111,7 +115,7 @@ An `n-a` unit has no “Done by” value.
 
 | ID | Unit | Done by | State | Note |
 | --- | --- | --- | --- | --- |
-| [INF-RUNTIME](inference.md#inf-runtime) | The llama.cpp runtime and its required settings | 6 | open | The exact llama-server flags are not validated. |
+| [INF-RUNTIME](inference.md#inf-runtime) | The llama.cpp runtime and its required settings | 6 | open | The exact llama-server flags need validation. |
 | [INF-FORMAT](inference.md#inf-format) | The GGUF format and the quantization levels | 5 | open |  |
 | [INF-MEMFIT](inference.md#inf-memfit) | The memory fit in 16 GB | 2 | open |  |
 | [INF-PERF](inference.md#inf-perf) | The performance measurement | 2 | open |  |
@@ -175,12 +179,12 @@ An `n-a` unit has no “Done by” value.
 | [IAC-IMAGE](infrastructure.md#iac-image) | The image stack | 0 | open |  |
 | [IAC-HOSTS](infrastructure.md#iac-hosts) | OpenBSD hosts on Scaleway | 0 | open |  |
 | [IAC-DURA](infrastructure.md#iac-dura) | Durability | 0 | open |  |
-| [IAC-STATE](infrastructure.md#iac-state) | The OpenTofu state | 0 | open | The OpenTofu encryption key providers are unverified. Read the OpenTofu encryption documentation before you write the backend block. |
+| [IAC-STATE](infrastructure.md#iac-state) | The OpenTofu state | 0 | open | The OpenTofu encryption key providers need verification. Read the OpenTofu encryption documentation before you write the backend block. The bootstrap runbook closes this point. |
 | [IAC-CRED](infrastructure.md#iac-cred) | The credentials | 0 | open |  |
 | [IAC-TRAINCRED](infrastructure.md#iac-traincred) | The train credential | 0 | open |  |
 | [IAC-SSH](infrastructure.md#iac-ssh) | The SSH keys | 0 | open |  |
 | [IAC-EXCEPT](infrastructure.md#iac-except) | The resources outside OpenTofu | 0 | open |  |
-| [IAC-PREREQ](infrastructure.md#iac-prereq) | The prerequisites | 0 | open | No GPU price and no Object Storage price is verified after 2026-06-01. The Elastic Metal prices in the document come from a recorded API response, read 2026-06-11. The cost of traffic between an instance and a bucket in the same region is unknown, and it is the largest unpriced item in the project. The live price read of IAC-PREREQ closes this point. |
+| [IAC-PREREQ](infrastructure.md#iac-prereq) | The prerequisites | 0 | open | No source verifies a GPU price or an Object Storage price after 2026-06-01. The Elastic Metal prices in the document come from a recorded API response, read 2026-06-11. The cost of traffic between an instance and a bucket in the same region is unknown, and it is the largest unpriced item in the project. The live price read of IAC-PREREQ closes this point. |
 | [IAC-SPEND](infrastructure.md#iac-spend) | The spend guardrails | 0 | open | The Billing API returns a list of budgets, and no source says that a second create fails. Import an existing budget before the first apply of `infra/persistent`. The bootstrap runbook closes this point. |
 | [IAC-TEARDOWN](infrastructure.md#iac-teardown) | Teardown | 0 | open |  |
 | [IAC-TASKS](infrastructure.md#iac-tasks) | The task runner | 0 | open |  |

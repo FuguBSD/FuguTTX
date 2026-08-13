@@ -30,8 +30,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SCAN = ["CLAUDE.md", "spec", "docs"]
 
-FENCE_RE = re.compile(r"^(```|~~~)", re.MULTILINE)
-LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+FENCE_RE = re.compile(r"^[ \t]*(```|~~~)", re.MULTILINE)
+LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 HEADING_RE = re.compile(r"^#{1,6}\s+(.*)$", re.MULTILINE)
 
 DOC_CODES = {
@@ -225,7 +225,11 @@ def parse_register(path: Path) -> tuple[Register, list[str]]:
             continue
         if not line.startswith("|"):
             continue
-        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        cells = [cell.strip() for cell in re.split(r"(?<!\\)\|", line.strip())]
+        if cells and cells[0] == "":
+            cells = cells[1:]
+        if cells and cells[-1] == "":
+            cells = cells[:-1]
         if not cells or all(set(cell) <= {"-"} for cell in cells):
             continue
         where = f"spec/status.md:{number}"
@@ -235,13 +239,14 @@ def parse_register(path: Path) -> tuple[Register, list[str]]:
             continue
         if section == "Code roots":
             if cells[0] != "Document" and len(cells) == 2:
-                roots = [] if cells[1] == "—" else [root.strip("`") for root in cells[1].split(",")]
-                register.code_roots[cells[0]] = [root.strip() for root in roots]
+                roots = [] if cells[1] == "—" else cells[1].split(",")
+                register.code_roots[cells[0]] = [root.strip().strip("`") for root in roots]
             continue
         if section in REGISTER_META_SECTIONS or cells[0] == "ID":
             continue
         row_id = ROW_ID_RE.match(cells[0])
         if not row_id:
+            errors.append(f"{where}: the ID cell must be one link to the unit anchor: {cells[0]}")
             continue
         if len(cells) != 5:
             errors.append(f"{where}: a register row must have five cells: {cells[0]}")
@@ -371,7 +376,9 @@ def check_drift(base: str, register: Register, units: dict[str, Path]) -> list[s
             continue
         roots = register.code_roots.get(name, [])
         if any(
-            path == root.rstrip("/") or path.startswith(root) for path in changed for root in roots
+            path == root.rstrip("/") or path.startswith(root.rstrip("/") + "/")
+            for path in changed
+            for root in roots
         ):
             continue
         implemented = [

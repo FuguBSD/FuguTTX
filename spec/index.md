@@ -35,8 +35,9 @@ When you make a plan:
 3. Read the listed documents.
    They give the requirements for the plan.
 4. Cite each requirement by its unit ID, for example `HRN-CONFIRM`. A plan lists the
-   units that it implements and the units that it defers.
-   The [implementation register](status.md) lists each unit and its state.
+   units that it implements, the units that it implements in part, and the units that it
+   defers. A plan lives in `docs/plans/`. The [implementation register](status.md) lists
+   each unit and its state.
 5. When your change implements a unit, or a part of a unit, set the state of the unit in
    the [implementation register](status.md) in the same change.
 
@@ -54,7 +55,9 @@ When you make a plan:
 - A unit ID names one unit of one document, for example `HRN-CONFIRM`. A rule ID names
   one rule inside a unit, for example `HRN-CONFIRM-6`. An HTML anchor with the
   lower-case ID marks each unit in its document.
-  An ID never changes, and a retired ID is never reused.
+  A unit extends from its anchor to the next unit anchor or heading, whichever comes
+  first. An ID must not change.
+  A retired ID must not return to use.
   The document codes are fixed:
 
 | Code | Document | Code | Document |
@@ -66,7 +69,7 @@ When you make a plan:
 | EVL | [evaluation.md](evaluation.md) | AGT | [agents.md](agents.md) |
 | LIC | [licensing.md](licensing.md) | RSK | [risks.md](risks.md) |
 - The [implementation register](status.md) is the only home of implementation state.
-  Only the [roadmap](roadmap.md) and the register state when work occurs.
+  Only the [roadmap](roadmap.md) and the register say when work occurs.
   Every other document describes the target design, in the current state only.
 
 ## Documents

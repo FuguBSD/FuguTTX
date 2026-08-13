@@ -125,12 +125,14 @@ installs fourteen tuned variants.
 The OpenBSD kernel exports `HWCAP_ASIMDDP` on this hardware.
 The defect is in the port, and not in the kernel.
 
-FuguTTX must do this work before it considers any GPU work:
+FuguTTX must do this work:
 
 1. Run `llama-bench` on the target machine with the package as it ships.
 2. Rebuild `devel/libggml` with `-DGGML_CPU_ARM_ARCH=armv8.4-a+dotprod+fp16`.
 3. Run `llama-bench` again, and record the difference.
 4. Send both results to the port maintainer.
+
+GPU work must not start without these results.
 
 <a id="inf-quant"></a>
 

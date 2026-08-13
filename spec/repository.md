@@ -58,6 +58,7 @@ fuguttx/
 ├── datasets/                    # dataset cards + manifests (not raw data)
 ├── models/                      # model cards + release manifests (GGUF via object storage/HF)
 ├── docs/                        # corpus/licensing notes, runbooks, research notes
+│   ├── plans/                   #   implementation plans, with unit citations
 │   ├── runbooks/                #   bootstrap, training campaign, release
 │   └── research/                #   dated research notes with sources
 ├── scripts/                     # repository checks (Python, standard library only)

@@ -218,35 +218,36 @@ Each tool is a function with a JSON schema.
 
 <a id="hrn-tool-ro"></a>**Read-only tools:**
 
-- Read configuration files under unveiled paths: `/etc/pf.conf`, `/etc/sysctl.conf`,
-  `/etc/rc.conf.local`.
-- Run diagnostics: `pfctl -s rules|states|info`, `ifconfig`, `netstat`, `sysctl` (read),
-  `pkg_info`, `rcctl get|check`, `dmesg`.
-- Render one man page, by section and name: `man -T ascii`. The arguments validate
-  against a strict name pattern.
+- **HRN-TOOL-RO-1.** Read configuration files under unveiled paths: `/etc/pf.conf`,
+  `/etc/sysctl.conf`, `/etc/rc.conf.local`.
+- **HRN-TOOL-RO-2.** Run diagnostics: `pfctl -s rules|states|info`, `ifconfig`,
+  `netstat`, `sysctl` (read), `pkg_info`, `rcctl get|check`, `dmesg`.
+- **HRN-TOOL-RO-3.** Render one man page, by section and name: `man -T ascii`. The
+  arguments validate against a strict name pattern.
   The retrieval rows of the [baseline grid](evaluation.md#baselines-and-ablations) use
   this tool.
-
-The parent runs most read-only tools directly as `_ttx`, with no doas.
-`pfctl` is the exception.
-`pfctl -s` reads `/dev/pf`, which is mode 0600 and owner root.
-The `pfctl -s rules|states|info` reads therefore get exact-argument doas rules.
-The argument set is finite, so an exact rule is safe here.
+- **HRN-TOOL-RO-4.** The parent runs most read-only tools directly as `_ttx`, with no
+  doas. `pfctl` is the exception.
+  `pfctl -s` reads `/dev/pf`, which is mode 0600 and owner root.
+  The `pfctl -s rules|states|info` reads therefore get exact-argument doas rules.
+  The argument set is finite, so an exact rule is safe here.
+  This rule depends on the system users ([HRN-ARCH](#hrn-arch)).
 
 <a id="hrn-tool-gate"></a>**Gated mutations — dry run first, always:**
 
-- Configuration edits: write a candidate file, show the diff, and validate
-  (`pfctl -nf pf.conf.candidate`). Install the file only after an explicit confirmation.
-- `pkg_add` and `pkg_delete`: run with `-n` first.
+- **HRN-TOOL-GATE-1.** Configuration edits: write a candidate file, show the diff, and
+  validate (`pfctl -nf pf.conf.candidate`). Install the file only after an explicit
+  confirmation.
+- **HRN-TOOL-GATE-2.** `pkg_add` and `pkg_delete`: run with `-n` first.
   Do the real invocation only after a confirmation.
-- `sysctl -w`: record the previous value.
+- **HRN-TOOL-GATE-3.** `sysctl -w`: record the previous value.
   Apply only after a confirmation.
   Give a rollback option.
-- `rcctl enable|start|restart`: apply only after a confirmation.
-
-Each gated mutation records its rollback path before it applies: the previous file
-content, the previous sysctl value, or the previous service state.
-The rollback record enters the session transcript.
+- **HRN-TOOL-GATE-4.** `rcctl enable|start|restart`: apply only after a confirmation.
+- **HRN-TOOL-GATE-5.** Each gated mutation records its rollback path before it applies:
+  the previous file content, the previous sysctl value, or the previous service state.
+  The rollback record enters the session transcript.
+  This rule depends on the session transcript ([HRN-TRANSCRIPT](#hrn-transcript)).
 
 <a id="hrn-pf-commit"></a>**The pf commit-confirm rule.** A bad ruleset can cut the
 connection that carries the confirmation, and `pfctl` has no built-in revert.
@@ -375,16 +376,18 @@ The harness does not stream.
 The harness assembles the prompt from a fixed chunk order: the system prompt, the
 operator instruction file, the skill list, and the messages that derive from the
 transcript. A fixed order maximizes prefix-cache reuse.
+The skill list comes from the skills mechanism ([HRN-SKILLS](#hrn-skills)).
 
-- **System prompt.** At most 700 tokens: the agent identity, one line per tool from the
-  tool metadata table, and the loop rules.
-- **Operator instruction file.** One file, `/etc/ttx/instructions.md`, with a budget of
-  4,096 bytes. The harness truncates the file at the budget, and it logs a warning.
+- **HRN-PROMPT-1 — System prompt.** At most 700 tokens: the agent identity, one line per
+  tool from the tool metadata table, and the loop rules.
+- **HRN-PROMPT-2 — Operator instruction file.** One file, `/etc/ttx/instructions.md`,
+  with a budget of 4,096 bytes.
+  The harness truncates the file at the budget, and it logs a warning.
   There is no directory walk and no file stacking.
-- **Cadence.** The harness reads the instruction file once per step.
+- **HRN-PROMPT-3 — Cadence.** The harness reads the instruction file once per step.
   The assembled prompt stays byte-stable across the turns of one step.
-- **Lockstep with training.** The system prompt, the tool schemas, the error templates,
-  and the re-prompt texts are training-time artifacts.
+- **HRN-PROMPT-4 — Lockstep with training.** The system prompt, the tool schemas, the
+  error templates, and the re-prompt texts are training-time artifacts.
   The SFT trace generator must use the same artifacts ([training](training.md)). A
   change to one of them is a training-data change, not only a harness change.
 
@@ -453,11 +456,7 @@ Two limits cap each tool output toward the model: 100 lines and 4,096 bytes, whi
 comes first. Truncation keeps the head and the tail, and it inserts an explicit marker
 with the count of elided lines and bytes.
 The exit status always survives.
-
-The transcript record keeps the full output, up to a hard cap of 65,536 bytes per
-record. Above the hard cap, the record also keeps the head and the tail, with a marker.
-No spool directory exists.
-Thus the parent unveil table stays a complete enumeration.
+The session transcript keeps the full output ([HRN-TRANSCRIPT](#hrn-transcript)).
 
 <a id="hrn-budgets"></a>
 
@@ -527,6 +526,11 @@ files safely. This specification does not fix the append discipline.
 - **Persistence policy.** Turn boundaries, model-visible content, tool calls, executed
   commands, exit statuses, confirmations, and usage counts persist.
   Transient progress events go to the client only.
+- **Record size cap.** A tool-result record keeps the full tool output, up to a hard cap
+  of 65,536 bytes per record.
+  Above the hard cap, the record keeps the head and the tail, with a marker.
+  No spool directory exists.
+  Thus the parent unveil table stays a complete enumeration.
 - **Three consumers, one file.** The model context, client replay, and the audit all
   derive from the transcript.
   Replay is side-effect-free.
@@ -542,6 +546,7 @@ files safely. This specification does not fix the append discipline.
 - **Syslog duplicate.** The parent writes each record to `syslog(3)` as a redacted
   summary. The key=value field names reuse the OpenTelemetry `gen_ai.*` vocabulary (for
   example `gen_ai.usage.input_tokens`), without the OTLP transport.
+  The audit rules of [HRN-SAFE-AUDIT](#hrn-safe-audit) govern this duplicate.
 - <a id="hrn-wirelog"></a>**Raw wire log.** The model process appends each raw request
   body and each raw response to a per-session wire log, `/var/log/ttx/wire-<id>.jsonl`.
   The parent opens the file in append mode before the fork, and the model process
@@ -554,7 +559,7 @@ files safely. This specification does not fix the append discipline.
   The wire log holds everything the model saw.
   Forensics for a malformed call needs the exact prompt bytes, not a paraphrase.
   The wire log has the same confidentiality as the transcript: owner `_ttx`, mode 0600
-  (see [safety design](#safety-design)).
+  ([HRN-SAFE-CONFID](#hrn-safe-confid)).
 
 ## Safety design
 
