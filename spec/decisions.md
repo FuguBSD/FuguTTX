@@ -74,8 +74,9 @@ Details: [variants](variants.md).
 
 OpenBSD source (ISC/BSD), man pages (mandoc, ISC), the FAQ/website (BSD, the `www`
 repository), and the commit logs of those trees make the redistributable-clean corpus.
-The project distributes the commit logs with the code, in every checkout and every
-public mirror, so the logs share the lane of the code.
+The project distributes the commit logs with the code, and every clone of a mirror
+contains the full log.
+Thus the logs share the lane of the code.
 This corpus trains the model.
 Mailing-list archives and undeadly.org are copyright of their authors.
 That material is only for evaluation and optional local RAG. It must not enter the

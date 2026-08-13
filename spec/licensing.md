@@ -15,7 +15,8 @@ BSD-licensed FAQ/www, and the commit logs of those trees.
 The project distributes the commit logs with the code, so the logs share its terms.
 All of it is redistributable with attribution and notices.
 Published **dataset cards** document the source, the filters, and the license class of
-each component.
+each component. The commit-log card also records the basis of its lane: the project
+distributes the logs with the code, and a human approved the lane ([corpus](corpus.md)).
 
 Mailing-list archives and undeadly.org are copyright of their authors.
 They live only in the eval/RAG corpus.

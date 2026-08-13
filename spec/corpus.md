@@ -23,13 +23,15 @@ The pipeline emits two corpora:
   This corpus is only for evaluation and optional local retrieval.
 
 Commit logs are part of the trees.
-The project distributes them with the code, in every checkout and every public mirror.
-Thus the commit logs take the clean lane, with the code they describe.
+The project distributes them with the code: every clone of a public mirror contains the
+full log. Thus the commit logs take the clean lane, with the code they describe.
 This lane assignment is a recorded human licensing-lane decision
 ([autonomous development](agents.md)). List mail is different: the project does not
 distribute the list archives, and each author keeps copyright.
 Commit logs matter for CPT. Each message binds a change to its reason, in the idiom of
-the project.
+the project. Each commit-log chunk keeps the tree name, the commit id, the date, and the
+committer. Thus attribution travels with the text, and the pipeline can select the logs
+of one tree.
 
 The lane rule is absolute.
 Author-copyrighted material must not enter the training data.
@@ -69,13 +71,18 @@ A variant must not have its own CPT slice.
 The SFT pass trains on synthetic traces, not on raw corpus text
 ([training](training.md)). The corpus still steers SFT: `ttx-synth` draws its scenarios
 and its grounding facts from named corpus components.
-The table maps each variant to its corpus use.
+The table maps each variant to its scenario sources.
 
-| Variant | CPT data | SFT scenario sources |
-| --- | --- | --- |
-| TTX 1 (operator) | Full clean corpus + replay data | Man pages and FAQ/www: `pf.conf` debug, package workflows, `sysctl` adjustment, `rcctl` service management |
-| TTX 1 Port (candidate) | The shared CPT checkpoint | Ports tree and the `ports` commit logs: port updates, Makefile and PLIST work |
-| TTX 1 Code (candidate) | The shared CPT checkpoint | Base source tree and the `src` commit logs: patches against the trees, regress runs |
+| Variant | SFT scenario sources |
+| --- | --- |
+| TTX 1 (operator) | Man pages and FAQ/www: `pf.conf` debug, package workflows, `sysctl` adjustment, `rcctl` service management |
+| TTX 1 Port (candidate) | Ports tree, the `ports` commit logs, and the port-maintenance man pages (`ports(7)`, `bsd.port.mk(5)`): port updates, Makefile and PLIST work |
+| TTX 1 Code (candidate) | Base source tree, the `src` commit logs, and `style(9)`: patches against the trees, regress runs |
+
+A seed and an evaluation item must stay apart.
+An item that seeds an SFT trace must not appear in an evaluation suite
+([evaluation](evaluation.md)). Without this split, a persona measurement grades memory,
+and the promotion rule of D5 loses its meaning.
 
 The eval/RAG corpus serves every variant in the same way: evaluation suites and optional
 local retrieval. It must not train any variant.
@@ -90,11 +97,18 @@ CVS pulls are brittle.
 The sources table names each tree the pipeline uses.
 Do not mirror a tree that no source row names.
 
+A corpus build pins one commit per mirror.
+The corpus manifest records each pinned commit id.
+Thus each build is reproducible, and the dataset card names the exact tree state.
+
 ## Pipeline stages
 
-1. Fetch and synchronize the mirrors.
+1. Fetch and synchronize the mirrors, and pin one commit per mirror.
 2. Extract and normalize: render the man pages with mandoc, convert HTML to text, walk
-   the code trees.
-3. Clean and chunk: remove license headers, remove near-duplicates.
+   the code trees, extract one record per commit from each log.
+3. Clean and chunk: remove license headers, remove near-duplicates, drop each commit
+   message below a documented length floor.
 4. Tag each chunk with its source and its license class.
-5. Emit the two corpora.
+5. Emit the two corpora, and hold out a slice of the clean corpus for the perplexity
+   suite ([evaluation](evaluation.md#domain-knowledge)). The held-out slice must not
+   enter a training manifest.

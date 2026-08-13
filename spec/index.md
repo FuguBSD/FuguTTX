@@ -66,7 +66,7 @@ When you make a plan:
 
 | Document | Contents |
 | --- | --- |
-| [Corpus](corpus.md) | Data sources, license lanes, and the data pipeline. |
+| [Corpus](corpus.md) | Data sources, license lanes, per-variant use, and the data pipeline. |
 | [Training](training.md) | CPT, SFT, trace generation, and the compute budget. |
 | [Evaluation](evaluation.md) | The five evaluation suites and the release gates. |
 
