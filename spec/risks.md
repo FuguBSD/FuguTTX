@@ -33,6 +33,18 @@ Automatic grades for sysadmin agentic tasks are hard.
 The qemu VM suite is real engineering work and a project dependency, not an
 afterthought. It has its own place in the [roadmap](roadmap.md).
 
+## CPT under QLoRA can add too little knowledge
+
+Low-rank adapters learn less than a full fine-tune, and knowledge injection is the case
+where the gap shows.
+The CPT pass can therefore return a small domain gain for its cost.
+Mitigations: the [baseline grid](evaluation.md#baselines-and-ablations) measures the CPT
+delta directly, and the retrieval baseline bounds the value of training.
+If the delta is small, the recorded escalations are: a higher adapter rank, or a
+full-parameter CPT run.
+Both fit one H100 at the 4B size.
+A human reviews the method before Phase 4 starts.
+
 ## Synthetic data quality
 
 Naive synthetic agentic traces have high malformed-tool-call rates.

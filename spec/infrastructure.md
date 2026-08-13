@@ -261,6 +261,21 @@ The host must pin an exact qemu version.
 A qemu upgrade must not reach the host without the guest-boot test above.
 The host holds no durable state.
 
+The host is the largest recurring cost line of the project, so idle time is waste.
+Two lifecycle rules bound it:
+
+- The idle watchdog must report a development host with no agent session, no evaluation
+  sweep, and no CI job in the last 48 hours.
+  The watchdog reports the host.
+  It must not destroy the host.
+- A metal host stays long-lived for one reason only: a re-order can fail on stock.
+  If the KVM test passes and a virtual instance becomes the host
+  ([decisions](decisions.md), D9), the host becomes ephemeral, like the train stack:
+  `just infra-up dev` before a work session, and `just infra-down dev` after.
+  A virtual instance re-creates in minutes, and the host holds no durable state, so the
+  cycle loses nothing.
+  The monthly reinstall schedule then retires.
+
 ### `infra/train`
 
 The stack declares four resources: a routed IPv4 address, a scratch volume, a block root

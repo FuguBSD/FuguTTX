@@ -32,14 +32,32 @@ A plan for a phase must satisfy the listed documents and the [decisions](decisio
   The corpus and licensing notes are published.
 - **Documents:** [corpus](corpus.md), [licensing and release](licensing.md).
 
-## Phase 2 — Baseline evaluation
+## Phase 2 — Harness slice and baseline evaluation
 
-- **Scope:** build the OpenBSD QA and agentic evaluation sets.
-  Benchmark Qwen3-4B zero-shot on OpenBSD tasks.
-  Measure CPU tokens/s on real OpenBSD hardware with `llama-bench`.
-- **Exit criteria:** a baseline scorecard, and the first published OpenBSD CPU inference
-  benchmark.
-- **Documents:** [evaluation](evaluation.md), [inference](inference.md).
+- **Scope:** build the **harness slice**: the shared artifacts (the system prompt, the
+  tool metadata table and its JSON schemas, the error templates, and the re-prompt
+  texts), and a minimal agent loop that drives a model through the agentic scenarios in
+  the OpenBSD guests. The slice implements the loop, the tool table, and the dry-run and
+  confirmation gates. It defers to Phase 6: the three-process privilege separation,
+  pledge and unveil, the doas C wrappers, the control socket, and the port.
+  Build the OpenBSD QA and agentic evaluation sets.
+  Measure the [baseline grid](evaluation.md#baselines-and-ablations): the base model
+  zero-shot, and the base model with the retrieval tool, both through the slice.
+  Re-survey the Qwen line and pin the base-model revision ([base model](model.md)).
+  Measure CPU tokens/s on real OpenBSD hardware with `llama-bench`, and measure full
+  agent turns against the [latency budget](inference.md#latency-budget).
+- **Exit criteria:** the shared artifacts are versioned in the repository.
+  A baseline scorecard covers the pre-training rows of the grid.
+  The first published OpenBSD CPU inference benchmark exists, with full-turn latency
+  against the budget. If the retrieval baseline reaches the
+  [release bars](evaluation.md#release-bars), a human reviews the value of training
+  before Phase 3 starts.
+- **Documents:** [evaluation](evaluation.md), [inference](inference.md),
+  [harness](harness.md), [base model](model.md).
+
+The slice exists so that the riskiest assumption — a 4B CPU model can drive the tool
+loop — meets evidence before the training spend, and so that Phase 4 traces and the
+agentic suite have real schemas and a real loop to run against.
 
 ## Phase 3 — Continued pretraining
 
@@ -51,11 +69,15 @@ A plan for a phase must satisfy the listed documents and the [decisions](decisio
 
 ## Phase 4 — SFT and agentic tuning
 
-- **Scope:** generate and judge-filter synthetic tool-use traces with the Qwen3-32B
-  teacher, from the shared harness artifacts: the system prompt, the tool schemas, and
-  the error templates ([training](training.md)). Run SFT from the CPT checkpoint.
-- **Exit criteria:** the agentic evaluation pass-rate threshold is met.
-  Tool-call validity is high.
+- **Scope:** generate synthetic tool-use traces with the Qwen3-32B teacher, from the
+  shared harness artifacts of Phase 2: the system prompt, the tool schemas, and the
+  error templates ([training](training.md)). Roll each trace out against a disposable
+  OpenBSD guest, so each tool result is real output.
+  Judge-filter the rollouts.
+  Run SFT from the CPT checkpoint.
+- **Exit criteria:** TTX 1 meets the pre-registered
+  [release bars](evaluation.md#release-bars), measured against the full
+  [baseline grid](evaluation.md#baselines-and-ablations).
   The escalation decision (4B versus 8B) is made.
 - **Documents:** [training](training.md), [evaluation](evaluation.md),
   [base model](model.md).
@@ -67,14 +89,14 @@ A plan for a phase must satisfy the listed documents and the [decisions](decisio
 - **Exit criteria:** signed GGUF artifacts, and a quantization quality report.
 - **Documents:** [inference](inference.md), [licensing and release](licensing.md).
 
-## Phase 6 — Harness integration
+## Phase 6 — Harness completion
 
-- **Scope:** the complete Perl harness, with pledge/unveil, doas policies, dry-run
-  gates, and the session transcript.
-  The llama-server integration study: the grammar constraint, prompt caching, context
-  shift, the `/tokenize` endpoint, the sampler settings, and the abort of an in-flight
-  generation ([harness](harness.md)). The transcript append discipline: the atomicity of
-  one record write on a crash, and the fsync policy.
+- **Scope:** complete the Phase 2 slice into the full Perl harness: the three-process
+  privilege separation, pledge/unveil, the doas C wrappers, the control socket, and the
+  session transcript. The llama-server integration study: the grammar constraint, prompt
+  caching, context shift, the `/tokenize` endpoint, the sampler settings, and the abort
+  of an in-flight generation ([harness](harness.md)). The transcript append discipline:
+  the atomicity of one record write on a crash, and the fsync policy.
   The port skeleton builds.
 - **Exit criteria:** the end-to-end TTX agent passes the evaluation suite in a VM, with
   no safety escape.

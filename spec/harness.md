@@ -104,7 +104,7 @@ must not hold `exec`**. Model output is untrusted input.
 
 | Process | Role | pledge, after setup | unveil |
 | --- | --- | --- | --- |
-| Parent (engine) | Policy, tool execution, audit | `stdio rpath wpath cpath proc exec` | the diagnostic binaries (x), the doas wrappers (x), `/usr/bin/doas` (x), the candidate directory (rwc), the `ttxd` binary (x), `/var/log/ttx` (rwc), `/etc` (r) |
+| Parent (engine) | Policy, tool execution, audit | `stdio rpath wpath cpath proc exec` | the diagnostic binaries (x), the doas wrappers (x), `/usr/bin/doas` (x), the candidate directory (rwc), the `ttxd` binary (x), `/var/log/ttx` (rwc), `/etc` (r), `/usr/share/man` (r) |
 | Model process | HTTP to llama-server, JSON parsing | `stdio` | nothing |
 | Frontend process | Control socket, session, confirmations | `stdio unix` | the socket path |
 
@@ -204,6 +204,10 @@ Each tool is a function with a JSON schema.
   `/etc/rc.conf.local`.
 - Run diagnostics: `pfctl -s rules|states|info`, `ifconfig`, `netstat`, `sysctl` (read),
   `pkg_info`, `rcctl get|check`, `dmesg`.
+- Render one man page, by section and name: `man -T ascii`. The arguments validate
+  against a strict name pattern.
+  The retrieval rows of the [baseline grid](evaluation.md#baselines-and-ablations) use
+  this tool.
 
 The parent runs most read-only tools directly as `_ttx`, with no doas.
 `pfctl` is the exception.
@@ -221,6 +225,30 @@ The argument set is finite, so an exact rule is safe here.
   Apply only after a confirmation.
   Give a rollback option.
 - `rcctl enable|start|restart`: apply only after a confirmation.
+
+Each gated mutation records its rollback path before it applies: the previous file
+content, the previous sysctl value, or the previous service state.
+The rollback record enters the session transcript.
+
+**The pf commit-confirm rule.** A bad ruleset can cut the connection that carries the
+confirmation, and `pfctl` has no built-in revert.
+A confirmed mistake is not an attack, so no gate stops it.
+A `pf.conf` install is therefore a two-step commit:
+
+1. Before the install, the parent copies the live `/etc/pf.conf` into the candidate
+   directory.
+2. After the confirmation, the parent installs the candidate and loads it through the
+   `pf-load` wrapper.
+3. A revert timer starts.
+   The default window is 120 seconds.
+4. The operator confirms connectivity through the client, inside the window.
+5. Without the second confirmation, the parent restores the saved file, and it loads the
+   file through the same wrapper.
+   A lockout thus heals itself.
+6. A session disconnect before the second confirmation triggers the same revert.
+
+The revert is the one mutation that runs without a fresh confirmation.
+It only restores the ruleset that was live before the install.
 
 **The terminal tool:**
 

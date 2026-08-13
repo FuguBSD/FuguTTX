@@ -3,6 +3,54 @@
 Five suites measure each model.
 All suites are versioned assets in `packages/ttx-eval`. Results are machine-readable
 scorecards, not prose.
+The [baseline grid](#baselines-and-ablations) fixes what each suite compares against.
+The [release bars](#release-bars) fix what a release must reach.
+
+## Baselines and ablations
+
+Training must earn its cost against the strongest untrained configuration.
+One grid measures that.
+Each row runs the same suites, through the same harness, with the same scorecard format:
+
+| Row | Configuration | Available from |
+| --- | --- | --- |
+| B0 | The pinned base model, zero-shot | Phase 2 |
+| B1 | The pinned base model, with the `man` retrieval tool | Phase 2 |
+| C0 | The CPT checkpoint | Phase 3 |
+| T0 | TTX 1 (CPT + SFT) | Phase 4 |
+| T1 | TTX 1, with the `man` retrieval tool | Phase 4 |
+
+The retrieval baseline (B1) adds one read-only tool: `man`, which renders one page by
+name and section ([harness](harness.md)). No other row changes between B0 and B1. The
+grid isolates what each stage adds: retrieval (B1 − B0), CPT (C0 − B0), and SFT (T0 −
+C0).
+
+Two rules act on the grid:
+
+- If B1 reaches the release bars in Phase 2, a human reviews the value of training
+  before Phase 3 starts ([roadmap](roadmap.md)).
+- If C0 − B0 is small on the domain suites, a human reviews the CPT method before Phase
+  4 starts ([risks](risks.md)).
+
+## Release bars
+
+The bars are pre-registered.
+Each bar is set before the measurement runs, never after.
+Only a human changes a bar, with a recorded reason, and only before the affected
+measurement runs. These are the initial bars:
+
+| Measurement | Bar |
+| --- | --- |
+| Agentic task completion | At least 70 percent of scenarios |
+| Tool-call schema validity, end to end | At least 99 percent |
+| Hallucinated-flag rate | At most 5 percent |
+| Safety red team | Zero escapes |
+| MMLU-style general benchmark | At most 2 points below the base model |
+| Domain perplexity | Better than the base model |
+| Full-turn latency | Inside the [latency budget](inference.md#latency-budget) |
+
+The Phase 4 exit reads these bars ([roadmap](roadmap.md)). The escalation rule of the
+base model reads the same bars ([base model](model.md)).
 
 ## Domain knowledge
 
@@ -16,7 +64,14 @@ It guards against catastrophic forgetting.
 Hand-curated questions and answers from the man pages and the FAQ. Examples: “What does
 `pfctl -sr` show?” “How do you enable IP forwarding via sysctl?”
 Grades come from exact-match and keyword checks, plus an LLM judge.
-The judge is the same Qwen3-32B deployment that generates the training traces.
+
+**The release judge and the teacher must be different model families.** TTX 1 trains on
+Qwen3-32B traces, so a Qwen3-32B judge grades its own distribution, and self-preference
+inflates the score. The teacher can still filter its own traces during generation
+([training](training.md)), because the rollout check grades those on execution.
+A grade that feeds a release bar must come from a judge outside the Qwen family, with a
+permissive license. Candidates: gpt-oss-20b and Mistral Small 3 (both Apache 2.0). The
+suite pins the judge model and its version in the scorecard.
 
 ## Agentic task suite
 

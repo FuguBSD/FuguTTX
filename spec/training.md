@@ -37,6 +37,7 @@ range up to 14B. Multi-GPU is not necessary.
 QLoRA continued pretraining on the redistributable-clean corpus.
 1–2 epochs, low learning rate.
 General-domain replay data is mixed in to prevent catastrophic forgetting.
+The replay data follows the [replay rules](corpus.md#replay-data) of the corpus.
 
 ### SFT pass
 
@@ -50,6 +51,18 @@ generation time, tool calls are constrained to the JSON schemas of the harness.
 A judge filter removes incorrect and unsafe traces before they enter the training set.
 Traces contain no thinking blocks.
 Traces target 8K tokens or less, to match the inference context budget.
+
+**The teacher proposes, and a rollout executes.** The rollout driver runs on the
+development host.
+It rolls each trace out against a disposable OpenBSD guest, through the
+harness slice of Phase 2 ([roadmap](roadmap.md)), with a snapshot restore between
+traces. Each tool result in a trace is the real output of the guest.
+A teacher-written observation must not enter a trace.
+A trace with a fabricated observation teaches the model to expect fabricated systems.
+The driver reaches the teacher over an SSH tunnel to the train instance, and the vLLM
+endpoint binds to localhost on that instance.
+A trace enters the training set only when both checks pass: the scenario check passes in
+the guest, and the judge filter accepts the trace.
 
 The harness format and the training format must not drift.
 The system prompt, the tool schemas, the error templates, and the re-prompt texts are
