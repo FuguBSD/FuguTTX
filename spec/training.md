@@ -34,22 +34,46 @@ range up to 14B. Multi-GPU is not necessary.
 
 ### CPT pass
 
-QLoRA continued pretraining on the redistributable-clean corpus.
+The CPT pass carries the primary OpenBSD knowledge of the model (D4). QLoRA continued
+pretraining trains on the redistributable-clean corpus plus its
+[synthetic augmentation](corpus.md#synthetic-augmentation).
 1–2 epochs, low learning rate.
 General-domain replay data is mixed in to prevent catastrophic forgetting.
 The replay data follows the [replay rules](corpus.md#replay-data) of the corpus.
 
+### Augmentation generation
+
+`ttx-synth` drives a **Qwen3-32B teacher**, served by vLLM on the same H100. The
+[trace generation](#trace-generation) uses the same teacher.
+The teacher rewrites each prose chunk of the clean corpus into paraphrases,
+question-and-answer pairs, and fact summaries.
+The generation prompt contains the source chunk, and the output must restate the facts
+of that chunk only. A judge filter compares each record against its source chunk.
+The filter drops each record that contradicts the source, and each record that adds a
+fact the source does not state.
+The augmentation targets three to five accepted restatements per source chunk.
+The data rules of the augmentation — the lanes, the tags, and the evaluation splits —
+are in the [corpus](corpus.md#synthetic-augmentation).
+
 ### SFT pass
 
-Supervised fine-tuning from the CPT checkpoint, on synthetic agentic traces: `pf.conf`
-debug, `pkg_add` workflows, `sysctl` adjustment, `rcctl` service management.
+Supervised fine-tuning from the CPT checkpoint, on two data kinds:
+
+- Synthetic agentic traces: `pf.conf` debug, `pkg_add` workflows, `sysctl` adjustment,
+  `rcctl` service management.
+- A grounded QA slice: single-turn question-and-answer items, generated from the man
+  pages and the FAQ with the source chunk in the prompt, under the augmentation rules
+  ([corpus](corpus.md#synthetic-augmentation)). The slice trains fact recall in the
+  answer format of the agent.
+
 The corpus components that seed the scenarios of each variant are specified in the
 [corpus](corpus.md#corpus-use-per-variant).
 
 ### Trace generation
 
-`ttx-synth` drives a **Qwen3-32B teacher**, served by vLLM on the same H100. At
-generation time, tool calls are constrained to the JSON schemas of the harness.
+`ttx-synth` drives the same **Qwen3-32B teacher** as the
+[augmentation generation](#augmentation-generation).
+At generation time, tool calls are constrained to the JSON schemas of the harness.
 A judge filter removes incorrect and unsafe traces before they enter the training set.
 Traces contain no thinking blocks.
 Traces target 8K tokens or less, to match the inference context budget.
@@ -94,8 +118,9 @@ Order-of-magnitude estimates, for one H100-1-80G at approximately €2.73/hour:
 
 | Item | GPU-hours | Cost per run |
 | --- | --- | --- |
-| CPT pass (domain corpus, QLoRA, 1–2 epochs) | 10–20 | €28–55 |
-| SFT pass (tens of thousands of traces) | 5–10 | €14–28 |
+| Augmentation campaign (Qwen3-32B teacher) | 10–30 | €28–82 |
+| CPT pass (corpus plus augmentation, QLoRA, 1–2 epochs) | 15–40 | €41–110 |
+| SFT pass (tens of thousands of traces, plus the grounded QA slice) | 5–10 | €14–28 |
 | Trace generation campaign (Qwen3-32B teacher) | 5–10 | €14–28 |
 
 For evaluation and iteration, budget 2–3 times the clean-run cost, for sweeps and

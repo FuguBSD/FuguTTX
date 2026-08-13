@@ -33,16 +33,19 @@ Automatic grades for sysadmin agentic tasks are hard.
 The qemu VM suite is real engineering work and a project dependency, not an
 afterthought. It has its own place in the [roadmap](roadmap.md).
 
-## CPT under QLoRA can add too little knowledge
+## CPT can add too little knowledge
 
-Low-rank adapters learn less than a full fine-tune, and knowledge injection is the case
-where the gap shows.
-The CPT pass can therefore return a small domain gain for its cost.
-Mitigations: the [baseline grid](evaluation.md#baselines-and-ablations) measures the CPT
-delta directly, and the retrieval baseline bounds the value of training.
-If the delta is small, the recorded escalations are: a higher adapter rank, or a
-full-parameter CPT run.
-Both fit one H100 at the 4B size.
+CPT must carry the primary knowledge of the model (D4), and two effects work against
+that. A model learns a fact only from many diverse statements of the fact, and low-rank
+adapters learn less than a full fine-tune.
+The first mitigation is in the method: the synthetic augmentation multiplies the
+statements of each fact ([corpus](corpus.md#synthetic-augmentation)), and the grounded
+QA slice trains recall in the answer format of the agent.
+The [baseline grid](evaluation.md#baselines-and-ablations) measures the CPT delta
+directly, on perplexity and on the OpenBSD QA set, and the retrieval baseline bounds the
+value of training. If the delta is small, the recorded escalations are: a larger
+augmentation multiple, a higher adapter rank, or a full-parameter CPT run.
+Each escalation fits one H100 at the 4B size.
 A human reviews the method before Phase 4 starts.
 
 ## Synthetic data quality
@@ -51,6 +54,13 @@ Naive synthetic agentic traces have high malformed-tool-call rates.
 Mitigations: schema-constrained generation against the real tool schemas of the harness,
 a strong teacher (Qwen3-32B), and aggressive judge filters.
 The tool-call validity evaluation measures the risk that remains.
+
+The synthetic augmentation adds a second failure mode: the teacher can write a wrong
+fact into the CPT data.
+Mitigations: the source chunk grounds each generation, and a judge filter drops each
+record that contradicts its source or adds a fact
+([training](training.md#augmentation-generation)). The OpenBSD QA suite and the
+hallucinated-flag rate measure the risk that remains.
 
 ## Licensing lane discipline
 

@@ -47,12 +47,19 @@ QLoRA runs complete in hours.
 On-demand billing and routine `tofu destroy` keep the costs low.
 Details: [training](training.md), [infrastructure](infrastructure.md).
 
-## D4 — Method: continued pretraining, then supervised fine-tuning
+## D4 — Method: knowledge-dense continued pretraining, then supervised fine-tuning
 
-CPT on the OpenBSD corpus adds vocabulary and idioms.
-SFT on synthetic agentic traces teaches tool use.
+CPT carries the primary OpenBSD knowledge of the model, together with the vocabulary and
+the idioms of the project.
+A model learns a fact only from many diverse statements of that fact, and the raw corpus
+states most facts once.
+Therefore the CPT data is the clean corpus plus a synthetic augmentation of it:
+teacher-written paraphrases, question-and-answer pairs, and fact summaries, each
+grounded in one source chunk ([corpus](corpus.md#synthetic-augmentation)). SFT on
+synthetic agentic traces teaches tool use.
+A grounded QA slice in the SFT mix trains fact recall in the answer format of the agent.
 Replay data and a low learning rate prevent catastrophic forgetting.
-A Qwen3-32B teacher proposes the traces.
+A Qwen3-32B teacher writes the augmentation and proposes the traces.
 A rollout in a disposable OpenBSD guest records each tool result, so no observation in a
 trace is fabricated.
 A judge filter removes bad traces before use.

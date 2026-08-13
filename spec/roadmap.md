@@ -61,11 +61,14 @@ agentic suite have real schemas and a real loop to run against.
 
 ## Phase 3 — Continued pretraining
 
-- **Scope:** QLoRA CPT on the clean corpus (H100-1-80G), with replay data and a low
-  learning rate.
-- **Exit criteria:** a CPT checkpoint with better domain perplexity than the base, and
-  no MMLU regression.
-- **Documents:** [training](training.md), [infrastructure](infrastructure.md).
+- **Scope:** generate the synthetic augmentation of the clean corpus with the Qwen3-32B
+  teacher, under the judge filter ([corpus](corpus.md#synthetic-augmentation),
+  [training](training.md#augmentation-generation)). QLoRA CPT on the clean corpus plus
+  the augmentation (H100-1-80G), with replay data and a low learning rate.
+- **Exit criteria:** a CPT checkpoint with better domain perplexity than the base, a
+  gain over the base on the OpenBSD QA set, and no MMLU regression.
+- **Documents:** [corpus](corpus.md), [training](training.md),
+  [infrastructure](infrastructure.md).
 
 ## Phase 4 — SFT and agentic tuning
 
@@ -74,7 +77,8 @@ agentic suite have real schemas and a real loop to run against.
   error templates ([training](training.md)). Roll each trace out against a disposable
   OpenBSD guest, so each tool result is real output.
   Judge-filter the rollouts.
-  Run SFT from the CPT checkpoint.
+  Generate the grounded QA slice ([training](training.md#sft-pass)). Run SFT from the
+  CPT checkpoint, on the traces and the grounded QA slice.
 - **Exit criteria:** TTX 1 meets the pre-registered
   [release bars](evaluation.md#release-bars), measured against the full
   [baseline grid](evaluation.md#baselines-and-ablations).

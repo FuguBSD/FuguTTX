@@ -56,8 +56,10 @@ base model reads the same bars ([base model](model.md)).
 
 Perplexity/NLL on a held-out slice of the clean corpus.
 The corpus pipeline holds out the slice at build time
-([corpus](corpus.md#pipeline-stages)). This confirms that CPT added OpenBSD knowledge.
-An MMLU-style general benchmark runs in parallel.
+([corpus](corpus.md#pipeline-stages)). The held-out slice must not seed the synthetic
+augmentation, so the measurement stays clean
+([corpus](corpus.md#synthetic-augmentation)). This confirms that CPT added OpenBSD
+knowledge. An MMLU-style general benchmark runs in parallel.
 It guards against catastrophic forgetting.
 
 ## OpenBSD QA set
@@ -65,6 +67,12 @@ It guards against catastrophic forgetting.
 Hand-curated questions and answers from the man pages and the FAQ. Examples: “What does
 `pfctl -sr` show?” “How do you enable IP forwarding via sysctl?”
 Grades come from exact-match and keyword checks, plus an LLM judge.
+
+CPT carries primary knowledge (D4), so this suite is the direct measure of the CPT
+delta, next to perplexity.
+A near-duplicate check keeps the suite out of the training data: the synthetic
+augmentation and the grounded QA slice drop each item that matches this suite
+([corpus](corpus.md#synthetic-augmentation)).
 
 **The release judge and the teacher must be different model families.** TTX 1 trains on
 Qwen3-32B traces, so a Qwen3-32B judge grades its own distribution, and self-preference

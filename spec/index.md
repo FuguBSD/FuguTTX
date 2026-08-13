@@ -11,8 +11,8 @@ The mascot of OpenBSD is a pufferfish.
 
 The recipe is short:
 
-1. Fine-tune Qwen3-4B (Apache 2.0) with QLoRA: continued pretraining (CPT), then agentic
-   supervised fine-tuning (SFT).
+1. Fine-tune Qwen3-4B (Apache 2.0) with QLoRA: continued pretraining (CPT) on the corpus
+   and its synthetic augmentation, then agentic supervised fine-tuning (SFT).
 2. Train on one Scaleway H100 instance.
    Destroy the instance after each session.
 3. Quantize to GGUF Q4_K_M.
@@ -66,8 +66,8 @@ When you make a plan:
 
 | Document | Contents |
 | --- | --- |
-| [Corpus](corpus.md) | Data sources, license lanes, per-variant use, and the data pipeline. |
-| [Training](training.md) | CPT, SFT, trace generation, and the compute budget. |
+| [Corpus](corpus.md) | Data sources, license lanes, synthetic augmentation, per-variant use, and the data pipeline. |
+| [Training](training.md) | CPT, augmentation generation, SFT, trace generation, and the compute budget. |
 | [Evaluation](evaluation.md) | The five evaluation suites and the release gates. |
 
 ### Platform and process
