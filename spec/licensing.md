@@ -18,6 +18,12 @@ Published **dataset cards** document the source, the filters, and the license cl
 each component. The commit-log card also records the basis of its lane: the project
 distributes the logs with the code, and a human approved the lane ([corpus](corpus.md)).
 
+The synthetic augmentation is a training-data component like the others
+([corpus](corpus.md#synthetic-augmentation)). Each record derives from one clean-lane
+source chunk, and the Apache 2.0 teacher places no restriction on its output.
+Its dataset card records the teacher model and version, the generation method, the judge
+filter, and the human lane approval.
+
 Mailing-list archives and undeadly.org are copyright of their authors.
 They live only in the eval/RAG corpus.
 They must not enter the training data.

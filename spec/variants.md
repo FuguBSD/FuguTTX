@@ -17,9 +17,9 @@ It goes in a variant.
 
 Each variant starts from the CPT checkpoint of TTX 1. The clean corpus contains the base
 source tree, the ports tree, and their commit logs.
-Thus the domain knowledge is shared.
-The SFT trace mix is what makes a variant different.
-The corpus components that seed each trace mix are specified per variant
+Thus the domain knowledge is shared: the CPT checkpoint carries it, from the clean
+corpus and its synthetic augmentation (D4). The SFT mix is what makes a variant
+different. The corpus components that seed each trace mix are specified per variant
 ([corpus](corpus.md#corpus-use-per-variant)). Each variant is an Axolotl overlay in
 `packages/ttx-train/configs/`. This keeps one base model, one CPT run, and one validated
 inference envelope for the full family.

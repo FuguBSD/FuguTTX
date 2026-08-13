@@ -17,8 +17,8 @@
 The pipeline emits two corpora:
 
 - **Redistributable-clean corpus:** source, man pages, FAQ, www, commit logs.
-  This corpus is the CPT training data.
-  It can ship inside the weights.
+  This corpus, plus its [synthetic augmentation](#synthetic-augmentation), is the CPT
+  training data. It can ship inside the weights.
 - **Eval/RAG corpus:** mailing lists, undeadly.org.
   This corpus is only for evaluation and optional local retrieval.
 
@@ -45,6 +45,38 @@ A training manifest accepts only tags on a fixed allow list: the clean-lane tags
 approved [replay](#replay-data) tags.
 A chunk with the eval/RAG tag must not reach a training manifest.
 
+## Synthetic augmentation
+
+CPT carries the primary knowledge of the model (D4), and a model learns a fact only from
+many diverse statements of that fact.
+The raw corpus states most facts once.
+Therefore the Qwen3-32B teacher rewrites the prose components of the clean corpus — the
+man pages, the FAQ/www, and the commit logs — into paraphrases, question-and-answer
+pairs, and fact summaries ([training](training.md#augmentation-generation)). The code
+trees are not augmented.
+Code trains in its raw form.
+
+The grounded QA slice of the SFT pass ([training](training.md#sft-pass)) is generated in
+the same way, and it follows the same rules.
+
+These rules govern the augmentation:
+
+- Each record derives from exactly one source chunk of the clean corpus.
+  Each record keeps the chunk id and the license tag of its source, plus a synthetic
+  marker. Thus provenance travels with the text, and the manifest check applies.
+- The eval/RAG corpus must not seed a record.
+  The lane rule applies to derived text.
+- The held-out perplexity slice must not seed a record
+  ([evaluation](evaluation.md#domain-knowledge)).
+- An evaluation item must not enter a training manifest.
+  A near-duplicate check compares the augmentation and the grounded QA slice against the
+  OpenBSD QA set, and it drops each match from the training data.
+- Qwen3-32B has an Apache 2.0 license, with no restriction on its output.
+  Thus each record shares the clean lane of its source chunk.
+- The augmentation set is a training source.
+  It gets a dataset card ([licensing](licensing.md)), and its lane assignment is a
+  recorded human licensing-lane decision ([autonomous development](agents.md)).
+
 ## Replay data
 
 The CPT pass mixes in general-domain replay data against catastrophic forgetting
@@ -65,12 +97,13 @@ The CPT pass mixes in general-domain replay data against catastrophic forgetting
 One CPT run serves the whole family.
 Each variant is an SFT overlay on the CPT checkpoint of TTX 1 (D5,
 [variants](variants.md)). Thus the CPT data is the same for every variant: the full
-clean corpus, plus the [replay data](#replay-data).
+clean corpus, its [synthetic augmentation](#synthetic-augmentation), plus the
+[replay data](#replay-data).
 A variant must not have its own CPT slice.
 
-The SFT pass trains on synthetic traces, not on raw corpus text
-([training](training.md)). The corpus still steers SFT: `ttx-synth` draws its scenarios
-and its grounding facts from named corpus components.
+The SFT pass trains on synthetic traces and the grounded QA slice, not on raw corpus
+text ([training](training.md)). The corpus still steers SFT: `ttx-synth` draws its
+scenarios and its grounding facts from named corpus components.
 The table maps each variant to its scenario sources.
 
 | Variant | SFT scenario sources |
@@ -80,9 +113,9 @@ The table maps each variant to its scenario sources.
 | TTX 1 Code (candidate) | Base source tree, the `src` commit logs, and `style(9)`: patches against the trees, regress runs |
 
 A seed and an evaluation item must stay apart.
-An item that seeds an SFT trace must not appear in an evaluation suite
-([evaluation](evaluation.md)). Without this split, a persona measurement grades memory,
-and the promotion rule of D5 loses its meaning.
+An item that seeds an SFT trace or a grounded QA item must not appear in an evaluation
+suite ([evaluation](evaluation.md)). Without this split, a persona measurement grades
+memory, and the promotion rule of D5 loses its meaning.
 
 The eval/RAG corpus serves every variant in the same way: evaluation suites and optional
 local retrieval. It must not train any variant.
@@ -111,4 +144,5 @@ Thus each build is reproducible, and the dataset card names the exact tree state
 4. Tag each chunk with its source and its license class.
 5. Emit the two corpora, and hold out a slice of the clean corpus for the perplexity
    suite ([evaluation](evaluation.md#domain-knowledge)). The held-out slice must not
-   enter a training manifest.
+   enter a training manifest, and it must not seed the
+   [synthetic augmentation](#synthetic-augmentation).
