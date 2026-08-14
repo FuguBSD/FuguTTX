@@ -26,7 +26,7 @@ Apply these rules:
   state only. Do not write the update as an amendment or a revision, and do not refer to
   an earlier state.
 - When your change implements a unit of the specification, or a part of a unit, set the
-  state of the unit in [spec/status.md](spec/status.md) in the same change.
+  state of the unit in [spec/STATUS.md](spec/STATUS.md) in the same change.
 
 ## Critical: writing standard
 

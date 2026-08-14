@@ -59,7 +59,7 @@ A plan for a phase must satisfy the listed documents and the [decisions](decisio
   ([HRN-SAFE-PLEDGE](harness.md#hrn-safe-pledge)), the doas C wrappers
   ([HRN-SAFE-WRAP](harness.md#hrn-safe-wrap)), the control socket
   ([HRN-SOCKET](harness.md#hrn-socket)), and the port ([HRN-PKG](harness.md#hrn-pkg)).
-  The [implementation register](status.md) lists each unit and its “Done by” phase.
+  The [implementation register](STATUS.md) lists each unit and its “Done by” phase.
   Build the OpenBSD QA and agentic evaluation sets.
   Measure the [baseline grid](evaluation.md#baselines-and-ablations): the base model
   zero-shot, and the base model with the retrieval tool, both through the slice.
@@ -121,7 +121,7 @@ agentic suite have real schemas and a real loop to run against.
   [HRN-PROC](harness.md#hrn-proc), [HRN-SAFE-PLEDGE](harness.md#hrn-safe-pledge),
   [HRN-SAFE-WRAP](harness.md#hrn-safe-wrap), [HRN-SOCKET](harness.md#hrn-socket), and
   [HRN-TRANSCRIPT](harness.md#hrn-transcript).
-  Phase 6 completes each unit that the [implementation register](status.md) lists with
+  Phase 6 completes each unit that the [implementation register](STATUS.md) lists with
   “Done by” 6. The llama-server integration study: the grammar constraint, prompt
   caching, context shift, the `/tokenize` endpoint, the sampler settings, and the abort
   of an in-flight generation ([harness](harness.md)). The transcript append discipline:

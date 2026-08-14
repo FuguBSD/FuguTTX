@@ -60,7 +60,7 @@ RULE_DEF_RE = re.compile(
 CITE_RE = re.compile(rf"\b(?:{CODE_ALT})(?:-[A-Z][A-Z0-9]*){{1,2}}(?:-[1-9][0-9]{{0,2}})?\b")
 ROW_ID_RE = re.compile(r"^\[([A-Z0-9-]+)\]\(([^)\s]+)\)$")
 PHASE_RE = re.compile(r"Phase [0-9]")
-PHASE_EXEMPT = {"roadmap.md", "status.md", "decisions.md", "evaluation.md"}
+PHASE_EXEMPT = {"roadmap.md", "STATUS.md", "decisions.md", "evaluation.md"}
 PHRASE_BANS = [
     re.compile(r"open design work"),
     re.compile(r"\b(previously|formerly|no longer)\b", re.IGNORECASE),
@@ -152,7 +152,7 @@ def check_index_coverage() -> list[str]:
             linked.add((index.parent / path_part).resolve())
     errors: list[str] = []
     for doc in sorted((ROOT / "spec").glob("*.md")):
-        if doc.name == "index.md":
+        if doc.name in {"index.md", "CLAUDE.md"}:
             continue
         if doc.resolve() not in linked:
             errors.append(f"spec/index.md does not list spec/{doc.name}")
@@ -213,7 +213,7 @@ class Register:
 def parse_register(path: Path) -> tuple[Register, list[str]]:
     register = Register()
     if not path.exists():
-        return register, ["spec/status.md does not exist"]
+        return register, ["spec/STATUS.md does not exist"]
     errors: list[str] = []
     section = ""
     for number, line in enumerate(
@@ -232,7 +232,7 @@ def parse_register(path: Path) -> tuple[Register, list[str]]:
             cells = cells[:-1]
         if not cells or all(set(cell) <= {"-"} for cell in cells):
             continue
-        where = f"spec/status.md:{number}"
+        where = f"spec/STATUS.md:{number}"
         if section == "Retired IDs":
             if cells[0] != "ID":
                 register.retired.add(cells[0])
@@ -266,7 +266,7 @@ def parse_register(path: Path) -> tuple[Register, list[str]]:
 
 def check_register(register: Register, units: dict[str, Path]) -> list[str]:
     errors: list[str] = []
-    status = ROOT / "spec" / "status.md"
+    status = ROOT / "spec" / "STATUS.md"
     active: set[str] = set()
     for row in register.rows:
         where = row["where"]
@@ -302,13 +302,13 @@ def check_register(register: Register, units: dict[str, Path]) -> list[str]:
                     errors.append(f"{where}: broken evidence link: {link}")
     anchor_ids = {unit.upper() for unit in units}
     for missing in sorted(anchor_ids - active):
-        errors.append(f"spec/status.md: no register row for the unit: {missing}")
+        errors.append(f"spec/STATUS.md: no register row for the unit: {missing}")
     for extra in sorted(active - anchor_ids):
-        errors.append(f"spec/status.md: a register row without a unit anchor: {extra}")
+        errors.append(f"spec/STATUS.md: a register row without a unit anchor: {extra}")
     for retired in sorted(register.retired & anchor_ids):
-        errors.append(f"spec/status.md: a retired ID still has an anchor: {retired}")
+        errors.append(f"spec/STATUS.md: a retired ID still has an anchor: {retired}")
     for retired in sorted(register.retired & active):
-        errors.append(f"spec/status.md: a retired ID has an active row: {retired}")
+        errors.append(f"spec/STATUS.md: a retired ID has an active row: {retired}")
     return errors
 
 
@@ -362,7 +362,7 @@ def check_drift(base: str, register: Register, units: dict[str, Path]) -> list[s
         check=True,
     )
     changed = {line.strip() for line in diff.stdout.splitlines() if line.strip()}
-    if "spec/status.md" in changed:
+    if "spec/STATUS.md" in changed:
         return []
     errors: list[str] = []
     for name in sorted(
@@ -388,7 +388,7 @@ def check_drift(base: str, register: Register, units: dict[str, Path]) -> list[s
             and units.get(row["id"].lower(), Path()).name == name
         ]
         errors.append(
-            f"spec/{name}: the change must also update spec/status.md or a code root; "
+            f"spec/{name}: the change must also update spec/STATUS.md or a code root; "
             f"implemented units: {', '.join(implemented)}"
         )
     return errors
@@ -408,7 +408,7 @@ def main() -> int:
     errors += unit_errors
     rules, rule_errors = collect_rule_definitions(files, units)
     errors += rule_errors
-    register, register_errors = parse_register(ROOT / "spec" / "status.md")
+    register, register_errors = parse_register(ROOT / "spec" / "STATUS.md")
     errors += register_errors
     errors += check_register(register, units)
     errors += check_citations(files, units, rules, register.retired)

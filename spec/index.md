@@ -36,10 +36,10 @@ When you make a plan:
    They give the requirements for the plan.
 4. Cite each requirement by its unit ID, for example `HRN-CONFIRM`. A plan lists the
    units that it implements, the units that it implements in part, and the units that it
-   defers. A plan lives in `docs/plans/`. The [implementation register](status.md) lists
+   defers. A plan lives in `docs/plans/`. The [implementation register](STATUS.md) lists
    each unit and its state.
 5. When your change implements a unit, or a part of a unit, set the state of the unit in
-   the [implementation register](status.md) in the same change.
+   the [implementation register](STATUS.md) in the same change.
 
 ## Conventions
 
@@ -68,7 +68,7 @@ When you make a plan:
 | TRN | [training.md](training.md) | REP | [repository.md](repository.md) |
 | EVL | [evaluation.md](evaluation.md) | AGT | [agents.md](agents.md) |
 | LIC | [licensing.md](licensing.md) | RSK | [risks.md](risks.md) |
-- The [implementation register](status.md) is the only home of implementation state.
+- The [implementation register](STATUS.md) is the only home of implementation state.
   Only the [roadmap](roadmap.md) and the register say when work occurs.
   Every other document describes the target design, in the current state only.
 
@@ -112,5 +112,5 @@ When you make a plan:
 | --- | --- |
 | [Licensing and release](licensing.md) | Licenses, dataset cards, model cards, and release integrity. |
 | [Roadmap](roadmap.md) | The nine phases and their exit criteria. |
-| [Implementation register](status.md) | Each unit of the specification and its implementation state. |
+| [Implementation register](STATUS.md) | Each unit of the specification and its implementation state. |
 | [Risks](risks.md) | Risks and their mitigations. |
