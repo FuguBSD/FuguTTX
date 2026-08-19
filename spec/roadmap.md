@@ -12,14 +12,14 @@ A plan for a phase must satisfy the listed documents and the [decisions](decisio
   OpenBSD qemu image, `CLAUDE.md`).
 - **Exit criteria:**
   - CI is green.
-  - CI applies and destroys the train stack end to end (`just infra-up train`, then
-    `just infra-down train`), with the pipeline credential.
+  - CI applies and destroys the train stack end to end (`make infra-up STACK=train`,
+    then `make infra-down STACK=train`), with the pipeline credential.
   - The development host is provisioned from `infra/dev`, and a rebuild from code
     reproduces it.
   - The spend guardrails are active: the billing alerts, the pre-apply consumption
     check, and the idle watchdog.
   - A development agent completes a full cycle without aid: plan → implement →
-    `just check` → PR.
+    `make check` → PR.
 - **Documents:** [repository](repository.md), [infrastructure](infrastructure.md),
   [autonomous development](agents.md), [licensing and release](licensing.md).
 
@@ -27,7 +27,7 @@ A plan for a phase must satisfy the listed documents and the [decisions](decisio
 
 - **Scope:** mirror synchronization, the extraction pipeline, and both corpora with
   license tags.
-- **Exit criteria:** `just data` reproducibly makes tagged, deduplicated,
+- **Exit criteria:** `make data` reproducibly makes tagged, deduplicated,
   license-classed text.
   The corpus and licensing notes are published.
 - **Documents:** [corpus](corpus.md), [licensing and release](licensing.md).

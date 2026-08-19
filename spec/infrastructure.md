@@ -257,19 +257,19 @@ can be out of stock.
 A re-order needs two conditions: the `stock` attribute of the offer data source reads
 `available`, and a human approves a workflow dispatch.
 
-`just dev-rebuild-check` runs the gates.
+`make dev-rebuild-check` runs the gates.
 A reinstall must not start unless each gate passes.
 
 | Gate | Check |
 | --- | --- |
-| No training in flight | `just infra-status` reports no live train stack |
+| No training in flight | `make infra-status` reports no live train stack |
 | No agent session in flight | No `dev-busy` object exists in the artifacts bucket |
 | No unsaved work | `git status --porcelain` is empty in each clone |
 | The corpus is durable | The local corpus digest equals the digest in the bucket |
-| Spend is under the cap | `just infra-cost` reports below 100 percent |
+| Spend is under the cap | `make infra-cost` reports below 100 percent |
 
 A reinstall wipes the disk and takes up to one hour.
-After the reinstall, CI must run `just check`, must boot one OpenBSD guest under KVM,
+After the reinstall, CI must run `make check`, must boot one OpenBSD guest under KVM,
 and must generate one token with llama.cpp.
 A failure must fail the workflow.
 
@@ -287,9 +287,9 @@ Two lifecycle rules bound it:
 - A metal host stays long-lived for one reason only: a re-order can fail on stock.
   If the KVM test passes and a virtual instance becomes the host
   ([decisions](decisions.md), D9), the host becomes ephemeral, like the train stack:
-  `just infra-up dev` before a work session, and `just infra-down dev` after.
-  A virtual instance re-creates in minutes, and the host holds no durable state, so the
-  cycle loses nothing.
+  `make infra-up STACK=dev` before a work session, and `make infra-down STACK=dev`
+  after. A virtual instance re-creates in minutes, and the host holds no durable state,
+  so the cycle loses nothing.
   The monthly reinstall schedule then retires.
 
 <a id="iac-train"></a>
@@ -306,7 +306,7 @@ Qwen3-32B at BF16 ([training](training.md)).
 **Scaleway grants no quota for an H100 offer.** An operator must request the quota from
 Scaleway Support before the first apply.
 The bootstrap runbook records the request and the grant.
-Until the grant exists, `just infra-up train` fails.
+Until the grant exists, `make infra-up STACK=train` fails.
 
 The instance boots the **Ubuntu Noble GPU OS 13 (NVIDIA)** image.
 That image supplies the NVIDIA driver, Docker, and the NVIDIA Container Toolkit.
@@ -357,8 +357,8 @@ Public bandwidth bounds the corpus transfer: 10 Gb/s on `H100-1-80G` and 2.5 Gb/
 ### `infra/image`
 
 The stack publishes the OpenBSD guest image that the agentic suite needs.
-`just image-build` runs `autoinstall(8)` under qemu in CI and emits a qcow2 file.
-`just image-publish` uploads the file to the artifacts bucket.
+`make image-build` runs `autoinstall(8)` under qemu in CI and emits a qcow2 file.
+`make image-publish` uploads the file to the artifacts bucket.
 Apply the stack when the OpenBSD release changes.
 Keep the previous image in the artifacts bucket.
 
@@ -500,7 +500,7 @@ The persistent stack must not declare an API key.
   Its policy adds the IAM administration that `infra/persistent` needs.
   In CI, only a protected manual workflow dispatch uses it, and only to apply
   `infra/persistent`. The same application serves recovery, for example a manual
-  `just infra-down` when CI is not available.
+  `make infra-down` when CI is not available.
 - **The train application.** Its policy permits read and write of Object Storage in the
   project, and nothing else.
   Each of its keys lives for one campaign.
@@ -540,13 +540,13 @@ A Scaleway instance has no metadata identity.
 writes its secret to state.
 The train key therefore must not touch OpenTofu, `user_data`, or state:
 
-1. At `just infra-up train`, CI creates a key on the train application with
+1. At `make infra-up STACK=train`, CI creates a key on the train application with
    `scw iam api-key create`, and sets `expires-at` to the value of the `ttx:expires`
    tag.
 2. CI delivers the key to the instance over SSH, after boot.
-   The SSH channel is the same transport that `just train cpt` uses.
+   The SSH channel is the same transport that `make train-cpt` uses.
 3. The first SSH step synchronizes the corpus to scratch NVMe.
-4. `just infra-down train` deletes the key.
+4. `make infra-down STACK=train` deletes the key.
    The expiry is the backstop when the teardown fails.
 
 <a id="iac-ssh"></a>
@@ -639,9 +639,9 @@ The forecast is the hourly price of the instance multiplied by the maximum lifet
 the run. A level check alone cannot bound spend, because it looks only at money already
 spent. Scaleway publishes no freshness figure for the consumption data.
 
-**The idle watchdog.** `just infra-watchdog` runs every 30 minutes from CI, and every 30
+**The idle watchdog.** `make infra-watchdog` runs every 30 minutes from CI, and every 30
 minutes from a systemd timer on the development host.
-The recipe must be idempotent.
+The target must be idempotent.
 A scheduled GitHub workflow is best effort.
 GitHub delays it under load, and GitHub disables it after 60 days with no new commit in
 a public repository.
@@ -679,7 +679,7 @@ A destroy of `infra/train` must remove the server, the scratch volume, the root 
 and the routed IPv4 address.
 Scaleway bills a reserved IPv4 whether it is attached or not.
 
-`just infra-watchdog` reconciles the live resources against the state of each stack.
+`make infra-watchdog` reconciles the live resources against the state of each stack.
 It reports each resource that carries no `ttx:managed` tag.
 A human removes it.
 
@@ -692,39 +692,40 @@ names. Only a human runs it.
 ## Task runner
 
 ```
-just infra-bootstrap        # the state bucket and its lifecycle rule — a human, once
-just infra-fmt-check        # tofu fmt -recursive -check — no credential
-just infra-validate stack   # tofu validate — no credential
-just infra-check            # infra-fmt-check, then infra-validate for each stack
-just infra-plan stack       # tofu plan — review what a session will create
-just infra-plan-ro stack    # tofu plan -lock=false — the pull-request plan
-just infra-up stack         # tofu apply — GPU billing starts here for train
-just infra-down stack       # tofu destroy — billing stops here
-just infra-status           # list live resources, so nothing idles unnoticed
-just infra-price stack      # print the hourly price of the stack compute
-just infra-cost             # month-to-date consumption against the budget
-just infra-watchdog         # destroy an idle train stack; report an orphan
-just dev-rebuild-check      # the reinstall gates
-just dev-reinstall          # reinstall the development host in place
-just image-build            # autoinstall OpenBSD under qemu; emit a qcow2
-just image-publish          # tofu apply image
-just corpus-sync            # move the corpus between the host and Object Storage
-just train cpt              # run the Axolotl CPT config on the instance
-just train sft              # run the SFT config
-just eval-sweep             # run an evaluation sweep
+make infra-bootstrap            # the state bucket and its lifecycle rule — a human, once
+make infra-fmt-check            # tofu fmt -recursive -check — no credential
+make infra-validate STACK=name  # tofu validate — no credential
+make infra-check                # infra-fmt-check, then infra-validate for each stack
+make infra-plan STACK=name      # tofu plan — review what a session will create
+make infra-plan-ro STACK=name   # tofu plan -lock=false — the pull-request plan
+make infra-up STACK=name        # tofu apply — GPU billing starts here for train
+make infra-down STACK=name      # tofu destroy — billing stops here
+make infra-status               # list live resources, so nothing idles unnoticed
+make infra-price STACK=name     # print the hourly price of the stack compute
+make infra-cost                 # month-to-date consumption against the budget
+make infra-watchdog             # destroy an idle train stack; report an orphan
+make dev-rebuild-check          # the reinstall gates
+make dev-reinstall              # reinstall the development host in place
+make image-build                # autoinstall OpenBSD under qemu; emit a qcow2
+make image-publish              # tofu apply image
+make corpus-sync                # move the corpus between the host and Object Storage
+make train-cpt                  # run the Axolotl CPT config on the instance
+make train-sft                  # run the SFT config
+make eval-sweep                 # run an evaluation sweep
 ```
 
-The same recipes run in CI and on the development host.
-`just check` must call `just infra-check`, so a local run reproduces the CI gate.
-`just infra-down` is a first-class step of the training runbook, not an afterthought.
+The same targets run in CI and on the development host.
+`make check` must call `make infra-check`, so a local run reproduces the CI gate.
+`make infra-down` is a first-class step of the training runbook, not an afterthought.
 
-`just infra-price train` reads `hourly_price` from the `scaleway_instance_server_type`
-data source. `just infra-price dev` must call the Scaleway Product Catalog API, because
-the Elastic Metal offer data source exposes no price.
+`make infra-price STACK=train` reads `hourly_price` from the
+`scaleway_instance_server_type` data source.
+`make infra-price STACK=dev` must call the Scaleway Product Catalog API, because the
+Elastic Metal offer data source exposes no price.
 Do not hardcode a price in the repository.
 
-The runbook must state how a recipe reaches the GPU instance.
-`just train cpt` runs on the instance, and the transport is part of the deterministic
+The runbook must state how a target reaches the GPU instance.
+`make train-cpt` runs on the instance, and the transport is part of the deterministic
 entry point that D8 requires.
 
 <a id="iac-ci"></a>

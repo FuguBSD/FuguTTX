@@ -11,7 +11,7 @@ The invocation of this skill is that human approval (see `spec/agents.md`).
 
 ## Steps
 
-1. Run `just check`. If it fails, stop and report the failure.
+1. Run `make check`. If it fails, stop and report the failure.
 2. Commit the remaining work.
    Push the session branch to `origin`.
 3. Create a pull request from the session branch to the default branch.

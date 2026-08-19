@@ -44,7 +44,7 @@ before that phase. An `n-a` unit has no “Done by” value.
 | inference.md | `packages/ttx-quant/`, `packages/ttx-eval/` |
 | model.md | `packages/ttx-train/` |
 | variants.md | `packages/ttx-train/`, `packages/ttx-eval/` |
-| repository.md | `justfile`, `scripts/`, `.github/workflows/` |
+| repository.md | `Makefile`, `scripts/`, `.github/workflows/` |
 | agents.md | `CLAUDE.md`, `.claude/` |
 | licensing.md | `models/`, `datasets/`, `docs/` |
 | risks.md | — |
@@ -196,7 +196,7 @@ before that phase. An `n-a` unit has no “Done by” value.
 | --- | --- | --- | --- | --- |
 | [REP-TOOLS](repository.md#rep-tools) | The tool choices | 0 | open |  |
 | [REP-LAYOUT](repository.md#rep-layout) | The monorepo layout | 0 | open |  |
-| [REP-RECIPES](repository.md#rep-recipes) | The task recipes | 0 | open |  |
+| [REP-RECIPES](repository.md#rep-recipes) | The task targets | 0 | open |  |
 | [REP-CI](repository.md#rep-ci) | The CI workflows | 0 | open |  |
 
 ## Autonomous development

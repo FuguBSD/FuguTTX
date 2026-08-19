@@ -10,12 +10,12 @@ In this document, “agent” means a development agent, not the TTX agent.
 
 ## The repository is the interface
 
-Each action has a deterministic entry point: a `just` recipe for each pipeline stage,
+Each action has a deterministic entry point: a `make` target for each pipeline stage,
 OpenTofu for each cloud resource, version-controlled Axolotl YAML for each training run,
 and a runbook in `docs/runbooks/` for each operational sequence.
 Agents run the same commands as humans.
 Thus each action is reproducible and auditable, no matter who did it.
-If a capability has no recipe, add the recipe.
+If a capability has no target, add the target.
 Do not work around it.
 
 <a id="agt-runtime"></a>
@@ -27,7 +27,7 @@ with Linux and KVM ([infrastructure](infrastructure.md)). Bare metal gives hardw
 virtualization for the OpenBSD guests.
 Native CPU performance is a convenience, because a published performance number comes
 only from the target hardware ([evaluation](evaluation.md)). The host carries the full
-toolchain: git, `just`, uv (Python 3.12), OpenTofu, Perl with `prove`, qemu with KVM,
+toolchain: git, `make`, uv (Python 3.12), OpenTofu, Perl with `prove`, qemu with KVM,
 llama.cpp, and the `scw` CLI. The host must pin an exact qemu version.
 A bootable OpenBSD qemu image with snapshot support must be available on the host.
 The `infra/image` stack produces that image and stores it in the artifacts bucket
@@ -76,8 +76,8 @@ idle watchdog. Only the quotas and the IAM policies block.
 The budget and the alerts notify.
 Two habits therefore remain:
 
-- `just infra-status` at the start and at the end of each work session.
-- `just infra-down` before a session ends with no training in flight.
+- `make infra-status` at the start and at the end of each work session.
+- `make infra-down` before a session ends with no training in flight.
 
 Only a human raises the budget.
 
@@ -88,7 +88,7 @@ Only a human raises the budget.
 Autonomous development is only as good as its verification.
 Each component defines “done” in a form a machine can check:
 
-- `just check` reproduces the full CI gate locally.
+- `make check` reproduces the full CI gate locally.
 - Evaluation results are machine-readable scorecards, not prose.
 - A smoke-train configuration (Qwen3-0.6B, a small corpus slice) validates pipeline
   changes in minutes, without a GPU campaign.
@@ -121,7 +121,7 @@ Four decisions stay human:
 
 1. **Merges.** Agents open pull requests.
    A human reviews and merges.
-   A green `just check` is necessary, never sufficient.
+   A green `make check` is necessary, never sufficient.
    A human can delegate the mechanical merge of one reviewed branch with the `/ship-it`
    skill. The invocation is the approval.
 2. **Releases.** Signatures (signify) and publication of weights, datasets, and the

@@ -49,7 +49,7 @@ A `done` note links the code or the tests.
 
 ## Checks
 
-`just spec-check` runs `scripts/spec_check.py`. It validates the links, the anchors, the
+`make spec-check` runs `scripts/spec_check.py`. It validates the links, the anchors, the
 register, the rule definitions, the citations, and the phase lint.
 On a pull request, CI adds a drift gate: a change to a document with a `partial` or
 `done` unit must also change STATUS.md or a mapped code root.

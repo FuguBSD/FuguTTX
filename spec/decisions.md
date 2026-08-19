@@ -113,7 +113,7 @@ Python for all model-side work.
 Perl for the harness body, with base modules only.
 C for the doas target wrappers, against libc alone.
 OpenTofu, 1.11 or later, for infrastructure.
-`just` as the task runner.
+`make` as the task runner.
 Python must not ship to the OpenBSD target.
 The harness must not have dependencies outside OpenBSD base.
 
