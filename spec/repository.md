@@ -52,6 +52,7 @@ fuguttx/
 │   ├── bin/ttx                  #   client entry point (Perl)
 │   ├── sbin/ttxd                #   daemon (Perl)
 │   ├── lib/TTX/                 #   Agent.pm, LLM.pm, Tools.pm, Sandbox.pm, Audit.pm
+│   ├── lib/Fugu/                #   REPL.pm, a verbatim copy from FuguBSD/Fugu (see harness.md)
 │   ├── libexec/                 #   fixed-function doas target wrappers (C, libc only)
 │   ├── t/                       #   prove(1) tests
 │   └── port/                    #   OpenBSD port skeleton (Makefile, PLIST, DESCR, rc.d)
@@ -95,9 +96,11 @@ Validation, on each push, with no cloud credentials:
   A reference between the specification and the code must not rot silently.
 - Harness body: `perl -c`, `prove`, taint mode, the no-CPAN-dependency check, and the
   execution-discipline check (list-form exec, three-argument open, no backticks).
-  A Linux runner has no `OpenBSD::Pledge` and no `OpenBSD::Unveil`. No-op shims under
-  `harness/t/lib/` stand in for both modules, so `perl -c` and `prove` run on any
-  runner. The shims live in the test tree only, and they never ship.
+  The vendor check compares `harness/lib/Fugu/REPL.pm` with its Fugu release, byte for
+  byte ([harness](harness.md#hrn-repl)). A Linux runner has no `OpenBSD::Pledge` and no
+  `OpenBSD::Unveil`. No-op shims under `harness/t/lib/` stand in for both modules, so
+  `perl -c` and `prove` run on any runner.
+  The shims live in the test tree only, and they never ship.
   Pledge and unveil behavior is verified on OpenBSD guests, on the development host.
 - doas wrappers: compile with the base toolchain, and `lint`.
 - Infrastructure: `tofu fmt -check` and `tofu validate`.

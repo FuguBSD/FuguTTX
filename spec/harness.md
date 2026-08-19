@@ -12,8 +12,8 @@ The harness has two programs, in the pattern of `smtpd(8)`/`smtpctl(8)` and
 - **`ttxd`** is the daemon.
   It runs as the dedicated unprivileged user `_ttx`. It holds the tool policy, and it
   executes all commands.
-- **`ttx`** is the client: the command line and the TUI. The operator runs it under a
-  normal user account.
+- **`ttx`** is the client: the command line and the operator REPL
+  ([HRN-REPL](#hrn-repl)). The operator runs it under a normal user account.
   It speaks to `ttxd` over a local control socket.
   It executes nothing.
 
@@ -37,10 +37,15 @@ The Perl harness uses only modules from base: `OpenBSD::Pledge(3p)` and
 `OpenBSD::Unveil(3p)` for the sandbox, `HTTP::Tiny` for the local llama-server API,
 `JSON::PP` for tool-call parsing, `Digest::SHA` for the confirmation digest,
 `Sys::Syslog` for the audit duplicate, and `Socket` for the control socket.
+The client reads operator input through the vendored `Fugu::REPL` module
+([HRN-REPL](#hrn-repl)). The module is project code from the sibling Fugu repository,
+and it loads with base modules only.
 
 **Zero CPAN dependencies is a hard constraint.
-A CI check enforces it.** The OpenBSD package tools are Perl, written against base
-alone. The harness follows the same discipline.
+A CI check enforces it.** A vendored verbatim copy of a base-only FuguBSD module is
+project code, not a dependency ([D7](decisions.md#d7)). The OpenBSD package tools are
+Perl, written against base alone.
+The harness follows the same discipline.
 The C wrappers compile with the base toolchain, so they add no port dependency.
 No port dependency exists, other than llama.cpp.
 
@@ -175,6 +180,49 @@ user id, then the group id, then the process id.
 Base Perl reads it with `getsockopt` and `unpack`, so no compiled module is necessary.
 The field order differs from the Linux `struct ucred`, so do not copy a Linux example.
 The session transcript attributes each session and each confirmation to that user id.
+
+<a id="hrn-repl"></a>
+
+## The operator REPL
+
+The interactive session of `ttx` is a REPL. `Fugu::REPL`, a module of the sibling Fugu
+repository, supplies the line editor.
+FuguPass builds its interface on the same module, so the interactive behavior stays
+uniform across the FuguBSD tools.
+
+- **HRN-REPL-1.** The client reads operator input through the vendored `Fugu::REPL`
+  module, at `harness/lib/Fugu/REPL.pm`. The vendored file must stay a verbatim copy of
+  one Fugu release. A CI check compares the file with the release.
+- **HRN-REPL-2.** The module must load with base modules only, and it must stand alone:
+  it must not load an other Fugu module.
+  It must operate inside the `stdio tty` promises of the client pledge: no file access,
+  no process creation, and no network access of its own.
+- **HRN-REPL-3.** An input line that starts with `/` is a client command from a fixed
+  command table. Every other line is a step prompt for the daemon.
+  The module generates `/help` from the table, and `/quit` ends the session.
+- **HRN-REPL-4.** History lives in memory, for the session only.
+  The client must not write a history file.
+- **HRN-REPL-5.** While a step runs, the client waits on the control socket and shows
+  the liveness events ([HRN-LIVE](#hrn-live)). An operator interrupt during a step sends
+  a cancel ([HRN-CANCEL](#hrn-cancel)). An interrupt at the prompt only clears the line.
+- **HRN-REPL-6.** A confirmation is an explicit yes/no prompt of the module, with the
+  default no. An end of file or an interrupt answers no.
+  On a yes, the client builds the confirmation message of [HRN-CONFIRM](#hrn-confirm).
+- **HRN-REPL-7.** Every byte from the daemon passes the display filter of the module
+  before display. The filter applies the rules of [HRN-SAFE-DISPLAY](#hrn-safe-display).
+- **HRN-REPL-8.** At the prompt, the module must watch the control socket as a
+  registered handle. A daemon disconnect ends the prompt read, and the client reports the
+  disconnect and exits.
+- **HRN-REPL-9.** When standard input is not a terminal, the module must read plain
+  lines, with no line editing and no escape output.
+  The test suites drive the client in this mode.
+
+The module holds the terminal in raw mode only while it reads a line.
+It restores the terminal state before command dispatch and on every exit path.
+The editor implements a fixed emacs-style key subset over the core `POSIX` termios
+interface, with tab completion from a callback.
+The interface contract of the module lives in the Fugu repository.
+A change to that contract coordinates with FuguPass through Fugu.
 
 <a id="hrn-confirm"></a>
 
