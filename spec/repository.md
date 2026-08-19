@@ -20,6 +20,7 @@ The boundary is where the code runs.
 | doas target wrappers | C, against libc alone | The privileged side of doas. A small C wrapper avoids the interpreter startup surface under doas, and libc gives `pledge(2)`, `unveil(2)`, and `execv(3)`. See [D7](decisions.md) and [harness](harness.md). |
 | Infrastructure as code | OpenTofu, with the Scaleway provider | Open-source IaC agrees with the project license ethos. It makes the ephemeral GPU lifecycle safe and repeatable. |
 | Task runner | `make` | One polyglot entry point for Python, Perl, and OpenTofu. `make` needs no installation step. |
+| External dependencies | `deps/<OS>.txt` manifests, installed by `scripts/deps` | The shared FuguBSD bootstrap script installs OS packages, CPAN modules, and prebuilt binaries the same way in every repository. FuguBSD/Tooling holds the canonical copy of the script. |
 | Format and lint | Ruff for Python, flowmark for Markdown | One formatter per language. flowmark makes semantic line breaks: one sentence per line. This agrees with the ASD-STE100 writing standard and keeps diffs small. |
 | Inference runtime | llama.cpp everywhere | The same runtime serves development (Metal on Apple Silicon) and production (OpenBSD CPU). What is validated is what ships. |
 | Teacher/judge model | Qwen3-32B teacher (Apache 2.0), served by vLLM on the H100; a release judge from a different model family | Clean license provenance for synthetic data. The teacher writes the corpus augmentation, and it proposes and filters traces. A judge outside the Qwen family grades each release bar ([evaluation](evaluation.md)). |
@@ -61,7 +62,9 @@ fuguttx/
 │   ├── plans/                   #   implementation plans, with unit citations
 │   ├── runbooks/                #   bootstrap, training campaign, release
 │   └── research/                #   dated research notes with sources
-├── scripts/                     # repository checks (Python, standard library only)
+├── deps/                        # per-OS dependency manifests (deps/<OS>.txt)
+├── scripts/                     # repository checks (Python, standard library only);
+│                                #   plus deps and ftp, verbatim copies from FuguBSD/Tooling
 └── .github/workflows/           # CI
 ```
 

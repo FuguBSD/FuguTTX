@@ -1,11 +1,5 @@
 # FuguTTX task targets. Run `make check` before each commit.
 
-SCW_VERSION = 2.61.0
-SCW_OS != uname -s | tr 'A-Z' 'a-z'
-SCW_ARCH != uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/'
-SCW_URL = https://github.com/scaleway/scaleway-cli/releases/download/v$(SCW_VERSION)/scaleway-cli_$(SCW_VERSION)_$(SCW_OS)_$(SCW_ARCH)
-BIN_DIR = $(HOME)/.local/bin
-
 .PHONY: help setup deps fmt spec-check check
 
 # List the targets.
@@ -16,12 +10,9 @@ help:
 setup:
 	uv sync
 
-# Install the external dependencies: the Scaleway CLI, into ~/.local/bin.
+# Install the external dependencies from deps/<OS>.txt, into ~/.local/bin.
 deps:
-	mkdir -p $(BIN_DIR)
-	curl -fsSL -o $(BIN_DIR)/scw "$(SCW_URL)"
-	chmod +x $(BIN_DIR)/scw
-	$(BIN_DIR)/scw version
+	scripts/deps runtime
 
 # Format the Python code and the Markdown documents.
 fmt:
