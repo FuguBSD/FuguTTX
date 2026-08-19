@@ -19,7 +19,7 @@ Evaluation evidence promotes a candidate to a release ([variants](variants.md)).
 - All components have permissive licenses: the weights, the harness, and, where
   possible, the data. This agrees with the ISC/BSD ethos of OpenBSD.
 - The pipeline is reproducible end to end.
-  Each pipeline stage runs from one `just` recipe.
+  Each pipeline stage runs from one `make` target.
   OpenTofu declares each cloud resource.
 - The pipeline operates continuously from CI, in platform-enforced guardrails
   ([infrastructure](infrastructure.md)).

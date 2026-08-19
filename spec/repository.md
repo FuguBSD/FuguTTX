@@ -2,7 +2,7 @@
 
 This is a Python + Perl + HCL monorepo.
 uv workspaces manage the Python packages: one lockfile, a shared virtualenv, and
-per-package `uv sync`. `just` is the polyglot task runner for all of it.
+per-package `uv sync`. `make` is the polyglot task runner for all of it.
 
 <a id="rep-tools"></a>
 
@@ -19,7 +19,7 @@ The boundary is where the code runs.
 | Harness body | Perl 5 from OpenBSD base, base modules only | Perl, `OpenBSD::Pledge(3p)`, and `OpenBSD::Unveil(3p)` ship in base. The OpenBSD package tools follow the same discipline. |
 | doas target wrappers | C, against libc alone | The privileged side of doas. A small C wrapper avoids the interpreter startup surface under doas, and libc gives `pledge(2)`, `unveil(2)`, and `execv(3)`. See [D7](decisions.md) and [harness](harness.md). |
 | Infrastructure as code | OpenTofu, with the Scaleway provider | Open-source IaC agrees with the project license ethos. It makes the ephemeral GPU lifecycle safe and repeatable. |
-| Task runner | `just` | One polyglot entry point for Python, Perl, and OpenTofu. |
+| Task runner | `make` | One polyglot entry point for Python, Perl, and OpenTofu. `make` needs no installation step. |
 | Format and lint | Ruff for Python, flowmark for Markdown | One formatter per language. flowmark makes semantic line breaks: one sentence per line. This agrees with the ASD-STE100 writing standard and keeps diffs small. |
 | Inference runtime | llama.cpp everywhere | The same runtime serves development (Metal on Apple Silicon) and production (OpenBSD CPU). What is validated is what ships. |
 | Teacher/judge model | Qwen3-32B teacher (Apache 2.0), served by vLLM on the H100; a release judge from a different model family | Clean license provenance for synthetic data. The teacher writes the corpus augmentation, and it proposes and filters traces. A judge outside the Qwen family grades each release bar ([evaluation](evaluation.md)). |
@@ -31,7 +31,7 @@ The boundary is where the code runs.
 
 ```
 fuguttx/
-├── justfile                     # top-level recipes: data, synth, train, eval, quant, infra, harness
+├── Makefile                     # top-level targets: data, synth, train, eval, quant, infra, harness
 ├── CLAUDE.md                    # development-agent context: conventions, entry points, safety rules
 ├── pyproject.toml               # uv workspace root (virtual root, no application code)
 ├── uv.lock                      # single lockfile
@@ -67,12 +67,13 @@ fuguttx/
 
 <a id="rep-recipes"></a>
 
-## Task recipes
+## Task targets
 
-`just data`, `just synth`, `just train cpt`, `just train sft`, `just eval`,
-`just quant`, `just infra-up train`, `just infra-down train`, `just harness-test`.
+`make data`, `make synth`, `make train-cpt`, `make train-sft`, `make eval`,
+`make quant`, `make infra-up STACK=train`, `make infra-down STACK=train`,
+`make harness-test`.
 
-The top-level `just check` runs each local lint, test, and validation step.
+The top-level `make check` runs each local lint, test, and validation step.
 It must pass before each commit.
 CI runs the same gate.
 
@@ -86,7 +87,7 @@ Validation, on each push, with no cloud credentials:
 
 - Python packages: ruff and pytest.
 - Markdown documents: `flowmark --check`, and the cross-reference check
-  (`just spec-check`). The check verifies each internal link and each anchor, and it
+  (`make spec-check`). The check verifies each internal link and each anchor, and it
   verifies that `spec/index.md` lists each specification document.
   A reference between the specification and the code must not rot silently.
 - Harness body: `perl -c`, `prove`, taint mode, the no-CPAN-dependency check, and the

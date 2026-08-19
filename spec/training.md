@@ -115,7 +115,7 @@ result, and the corrected call.
 Training runs in the published Axolotl CUDA Docker image on the instance.
 The Scaleway GPU OS image supplies the NVIDIA drivers, Docker, and the NVIDIA container
 toolkit. All Axolotl YAML configurations live in `packages/ttx-train/configs/`, under
-version control. A run is `just train cpt` or `just train sft` against a provisioned
+version control. A run is `make train-cpt` or `make train-sft` against a provisioned
 instance. Checkpoints synchronize to Object Storage after each epoch.
 Thus instance destruction cannot lose work.
 

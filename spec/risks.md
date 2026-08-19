@@ -89,7 +89,7 @@ check runs before each training manifest is built ([corpus](corpus.md)).
 Scaleway prices and GPU stock change, by region and over time.
 Confirm the console before each campaign.
 Exposure is bounded by structure: per-minute billing and the create/destroy lifecycle.
-An idle GPU can cost money only while `just infra-status` shows that it exists.
+An idle GPU can cost money only while `make infra-status` shows that it exists.
 The idle watchdog destroys a train stack with no training in flight
 ([infrastructure](infrastructure.md)).
 

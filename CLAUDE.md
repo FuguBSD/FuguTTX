@@ -6,6 +6,15 @@ less, through llama.cpp.
 The `ttx` harness — Perl 5, base modules only — operates the model in the boundaries of
 pledge, unveil, doas rules, and dry-run gates.
 
+## Tasks and dependencies
+
+`make` runs the project tasks.
+`make help` lists the targets.
+
+- Run `make setup` once, to install the development tools into `.venv`.
+- Run `make deps` once, to install the Scaleway CLI (`scw`) into `~/.local/bin`.
+- Run `make check` before each commit.
+
 ## The specification is a living document
 
 The specification in [`spec/`](spec/index.md) governs all work.
