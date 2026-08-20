@@ -82,7 +82,7 @@ before that phase. An `n-a` unit has no “Done by” value.
 | [HRN-ARCH](harness.md#hrn-arch) | The llama-server topology and the three system users | 6 | open |  |
 | [HRN-PROC](harness.md#hrn-proc) | The three processes of ttxd | 6 | open |  |
 | [HRN-SOCKET](harness.md#hrn-socket) | The control socket | 6 | open |  |
-| [HRN-REPL](harness.md#hrn-repl) | The operator REPL on the vendored Fugu::REPL module | 6 | open | The Fugu::REPL module does not exist in the Fugu repository. Its interface contract lands there with the implementation. |
+| [HRN-REPL](harness.md#hrn-repl) | The operator REPL on the Fugu::REPL module | 6 | open | The Fugu::REPL module does not exist in the Fugu distribution. Its interface contract lands there with the implementation. |
 | [HRN-CONFIRM](harness.md#hrn-confirm) | The confirmation protocol: the dry-run gate and its digest binding | 6 | open |  |
 | [HRN-TOOL-RO](harness.md#hrn-tool-ro) | The read-only tools | 6 | open |  |
 | [HRN-TOOL-GATE](harness.md#hrn-tool-gate) | The gated mutations | 6 | open |  |

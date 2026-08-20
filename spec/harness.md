@@ -33,21 +33,20 @@ unprivileged side of doas, C on the privileged side.
 The C never faces the model.
 The Perl never runs as root.
 
-The Perl harness uses only modules from base: `OpenBSD::Pledge(3p)` and
+The Perl harness uses the modules from base: `OpenBSD::Pledge(3p)` and
 `OpenBSD::Unveil(3p)` for the sandbox, `HTTP::Tiny` for the local llama-server API,
 `JSON::PP` for tool-call parsing, `Digest::SHA` for the confirmation digest,
 `Sys::Syslog` for the audit duplicate, and `Socket` for the control socket.
-The client reads operator input through the vendored `Fugu::REPL` module
-([HRN-REPL](#hrn-repl)). The module is project code from the sibling Fugu repository,
-and it loads with base modules only.
+One module comes from outside base: the client reads operator input through the
+`Fugu::REPL` module of the installed Fugu distribution ([HRN-REPL](#hrn-repl)). The
+module comes from the sibling Fugu repository, and it loads with base modules only.
 
-**Zero CPAN dependencies is a hard constraint.
-A CI check enforces it.** A vendored verbatim copy of a base-only FuguBSD module is
-project code, not a dependency ([D7](decisions.md#d7)). The OpenBSD package tools are
-Perl, written against base alone.
-The harness follows the same discipline.
+**No CPAN install on the target is a hard constraint.
+A CI check enforces the import rule: base modules plus `Fugu::REPL`, and no other
+([D7](decisions.md#d7)).** The OpenBSD package tools are Perl, written against base
+alone. The harness follows the same discipline in its own code.
 The C wrappers compile with the base toolchain, so they add no port dependency.
-No port dependency exists, other than llama.cpp.
+Two port dependencies exist: llama.cpp and p5-Fugu.
 
 Base Perl has no `imsg_init(3)` interface.
 The harness frames each internal message as a length-prefixed `JSON::PP` record over
@@ -190,9 +189,10 @@ repository, supplies the line editor.
 FuguPass builds its interface on the same module, so the interactive behavior stays
 uniform across the FuguBSD tools.
 
-- **HRN-REPL-1.** The client reads operator input through the vendored `Fugu::REPL`
-  module, at `harness/lib/Fugu/REPL.pm`. The vendored file must stay a verbatim copy of
-  one Fugu release. A CI check compares the file with the release.
+- **HRN-REPL-1.** The client reads operator input through the `Fugu::REPL` module of the
+  installed Fugu distribution.
+  On the target, the port installs the p5-Fugu package as a run dependency, with a
+  minimum version ([HRN-PKG](#hrn-pkg)). The client loads the module before it pledges.
 - **HRN-REPL-2.** The module must load with base modules only, and it must stand alone:
   it must not load an other Fugu module.
   It must operate inside the `stdio tty` promises of the client pledge: no file access,
@@ -722,9 +722,12 @@ and to other users. `ttx fetch` re-checks the signature at load time.
 ## Package
 
 The harness ships as an OpenBSD port, `sysutils/ttx`. The port skeleton lives in the
-repository. The port installs `ttxd`, `ttx`, and the doas target wrappers under
-`/usr/local/libexec/ttx`. It creates the `_ttx` user, the `_ttxllm` user, and the
-`ttxop` group. It creates the log directory `/var/log/ttx` (owner `_ttx`, mode 0700) and
-the configuration directory `/etc/ttx`. It includes two `rc.d` scripts: one runs
+repository.
+The port lists llama.cpp and p5-Fugu as run dependencies, with a minimum Fugu
+version ([HRN-REPL](#hrn-repl)). The port installs `ttxd`, `ttx`, and the doas target
+wrappers under `/usr/local/libexec/ttx`. It creates the `_ttx` user, the `_ttxllm` user,
+and the `ttxop` group.
+It creates the log directory `/var/log/ttx` (owner `_ttx`, mode 0700) and the
+configuration directory `/etc/ttx`. It includes two `rc.d` scripts: one runs
 `llama-server` with the TTX model, and one runs `ttxd`. Weights do not ship in the
 package. `ttx fetch` downloads the models separately.

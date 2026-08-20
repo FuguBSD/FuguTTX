@@ -3,8 +3,8 @@
 FuguTTX is TTX 1: a small language model and agent for OpenBSD system administration.
 TTX 1 is a fine-tune of Qwen3-4B. It runs on the CPU, on OpenBSD, in 16 GB of RAM or
 less, through llama.cpp.
-The `ttx` harness — Perl 5, base modules only — operates the model in the boundaries of
-pledge, unveil, doas rules, and dry-run gates.
+The `ttx` harness — Perl 5, base modules plus `Fugu::REPL` — operates the model in the
+boundaries of pledge, unveil, doas rules, and dry-run gates.
 
 ## Tasks and dependencies
 

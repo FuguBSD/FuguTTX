@@ -110,18 +110,19 @@ Details: [corpus](corpus.md).
 ## D7 — Languages and tools are fixed
 
 Python for all model-side work.
-Perl for the harness body, with base modules only.
-C for the doas target wrappers, against libc alone.
+Perl for the harness body, with base modules plus `Fugu::REPL`. C for the doas target
+wrappers, against libc alone.
 OpenTofu, 1.11 or later, for infrastructure.
 `make` as the task runner.
 Python must not ship to the OpenBSD target.
-The harness must not have dependencies outside OpenBSD base.
+The harness must not install from CPAN on the target.
+Each harness dependency comes from OpenBSD base or from an OpenBSD package.
+The port dependencies are llama.cpp and p5-Fugu, and no other.
 
 The client interface comes from `Fugu::REPL`, a module of the sibling Fugu repository.
-The module loads with base modules only.
-The harness vendors it as a verbatim copy of one Fugu release
-([harness](harness.md#hrn-repl)). A vendored base-only copy is project code, not a
-dependency.
+The Fugu distribution is on CPAN, so it packages as the p5-Fugu port.
+The module loads with base modules only, and the client loads only this module from the
+distribution ([harness](harness.md#hrn-repl)).
 
 The harness has two sides, and the doas boundary divides them.
 Perl runs on the unprivileged side of doas.

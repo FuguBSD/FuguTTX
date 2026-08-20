@@ -16,7 +16,7 @@ The boundary is where the code runs.
 | Model-side work (data, synthesis, training, evaluation, quantization) | Python 3.12, uv workspace, one lockfile | The ML ecosystem is Python. uv gives one lockfile and per-package installation, with no environment drift. |
 | Training framework | Axolotl (QLoRA), YAML configurations in git | One framework covers CPT and SFT. Version-controlled YAML makes each run reproducible. |
 | GPU runtime | Upstream Docker images (Axolotl for training, vLLM for the teacher) on the Scaleway GPU OS image | No custom environments on ephemeral instances. The uv workspace runs on the operator machine and in CI, not on the GPU. |
-| Harness body | Perl 5 from OpenBSD base, base modules only | Perl, `OpenBSD::Pledge(3p)`, and `OpenBSD::Unveil(3p)` ship in base. The OpenBSD package tools follow the same discipline. |
+| Harness body | Perl 5 from OpenBSD base, base modules plus `Fugu::REPL` from the p5-Fugu package | Perl, `OpenBSD::Pledge(3p)`, and `OpenBSD::Unveil(3p)` ship in base. The OpenBSD package tools follow the same discipline. The Fugu library supplies the shared REPL module ([harness](harness.md#hrn-repl)). |
 | doas target wrappers | C, against libc alone | The privileged side of doas. A small C wrapper avoids the interpreter startup surface under doas, and libc gives `pledge(2)`, `unveil(2)`, and `execv(3)`. See [D7](decisions.md) and [harness](harness.md). |
 | Infrastructure as code | OpenTofu, with the Scaleway provider | Open-source IaC agrees with the project license ethos. It makes the ephemeral GPU lifecycle safe and repeatable. |
 | Task runner | `make` | One polyglot entry point for Python, Perl, and OpenTofu. `make` needs no installation step. |
@@ -52,7 +52,6 @@ fuguttx/
 │   ├── bin/ttx                  #   client entry point (Perl)
 │   ├── sbin/ttxd                #   daemon (Perl)
 │   ├── lib/TTX/                 #   Agent.pm, LLM.pm, Tools.pm, Sandbox.pm, Audit.pm
-│   ├── lib/Fugu/                #   REPL.pm, a verbatim copy from FuguBSD/Fugu (see harness.md)
 │   ├── libexec/                 #   fixed-function doas target wrappers (C, libc only)
 │   ├── t/                       #   prove(1) tests
 │   └── port/                    #   OpenBSD port skeleton (Makefile, PLIST, DESCR, rc.d)
@@ -94,12 +93,13 @@ Validation, on each push, with no cloud credentials:
   (`make spec-check`). The check verifies each internal link and each anchor, and it
   verifies that `spec/index.md` lists each specification document.
   A reference between the specification and the code must not rot silently.
-- Harness body: `perl -c`, `prove`, taint mode, the no-CPAN-dependency check, and the
-  execution-discipline check (list-form exec, three-argument open, no backticks).
-  The vendor check compares `harness/lib/Fugu/REPL.pm` with its Fugu release, byte for
-  byte ([harness](harness.md#hrn-repl)). A Linux runner has no `OpenBSD::Pledge` and no
-  `OpenBSD::Unveil`. No-op shims under `harness/t/lib/` stand in for both modules, so
-  `perl -c` and `prove` run on any runner.
+- Harness body: `perl -c`, `prove`, taint mode, the dependency check (base-module
+  imports plus `Fugu::REPL`, and no other), and the execution-discipline check
+  (list-form exec, three-argument open, no backticks).
+  CI installs the Fugu distribution through `scripts/deps`, so `prove` runs with the
+  real module ([harness](harness.md#hrn-repl)). A Linux runner has no `OpenBSD::Pledge`
+  and no `OpenBSD::Unveil`. No-op shims under `harness/t/lib/` stand in for both
+  modules, so `perl -c` and `prove` run on any runner.
   The shims live in the test tree only, and they never ship.
   Pledge and unveil behavior is verified on OpenBSD guests, on the development host.
 - doas wrappers: compile with the base toolchain, and `lint`.
