@@ -11,7 +11,7 @@ The check enforces these rules:
 6. Each register row must use the fixed state vocabulary.
 7. Each rule definition must sit in the document of its unit.
 8. Each unit or rule citation must resolve.
-9. Only the exempt documents can state when work occurs.
+9. A specification document must not state a schedule phase (Phase N).
 10. With `--drift <base>`: a change to a document with a `partial` or `done`
     unit must also change the register or a mapped code root.
 
@@ -60,7 +60,6 @@ RULE_DEF_RE = re.compile(
 CITE_RE = re.compile(rf"\b(?:{CODE_ALT})(?:-[A-Z][A-Z0-9]*){{1,2}}(?:-[1-9][0-9]{{0,2}})?\b")
 ROW_ID_RE = re.compile(r"^\[([A-Z0-9-]+)\]\(([^)\s]+)\)$")
 PHASE_RE = re.compile(r"Phase [0-9]")
-PHASE_EXEMPT = {"roadmap.md", "STATUS.md", "decisions.md", "evaluation.md"}
 PHRASE_BANS = [
     re.compile(r"open design work"),
     re.compile(r"\b(previously|formerly|no longer)\b", re.IGNORECASE),
@@ -248,16 +247,15 @@ def parse_register(path: Path) -> tuple[Register, list[str]]:
         if not row_id:
             errors.append(f"{where}: the ID cell must be one link to the unit anchor: {cells[0]}")
             continue
-        if len(cells) != 5:
-            errors.append(f"{where}: a register row must have five cells: {cells[0]}")
+        if len(cells) != 4:
+            errors.append(f"{where}: a register row must have four cells: {cells[0]}")
             continue
         register.rows.append(
             {
                 "id": row_id.group(1),
                 "target": row_id.group(2),
-                "done_by": cells[2],
-                "state": cells[3],
-                "note": cells[4],
+                "state": cells[2],
+                "note": cells[3],
                 "where": where,
             }
         )
@@ -281,11 +279,6 @@ def check_register(register: Register, units: dict[str, Path]) -> list[str]:
         if row["state"] not in STATES:
             errors.append(f"{where}: unknown state: {row['state']}")
             continue
-        if row["state"] == "n-a":
-            if row["done_by"] != "—":
-                errors.append(f"{where}: an n-a unit must have the Done by value —: {row['id']}")
-        elif row["done_by"] not in {str(n) for n in range(9)}:
-            errors.append(f"{where}: the Done by value must be a phase 0-8: {row['id']}")
         if row["state"] == "partial" and not row["note"]:
             errors.append(f"{where}: a partial row needs a note: {row['id']}")
         if row["state"] == "done":
@@ -340,10 +333,8 @@ def check_phase_and_phrases(files: list[Path]) -> list[str]:
         if rel_source.parts[0] != "spec":
             continue
         text = strip_code_fences(source.read_text(encoding="utf-8"))
-        if source.name not in PHASE_EXEMPT and PHASE_RE.search(text):
-            errors.append(
-                f"{rel_source}: only the exempt documents can state when work occurs (Phase N)"
-            )
+        if PHASE_RE.search(text):
+            errors.append(f"{rel_source}: a document must not state a schedule phase (Phase N)")
         for ban in PHRASE_BANS:
             match = ban.search(text)
             if match:

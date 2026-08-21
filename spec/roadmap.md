@@ -1,152 +1,161 @@
 # Roadmap
 
-Nine phases, in sequence.
-Each phase gives a plan its scope, its exit criteria, and its documents.
-A plan for a phase must satisfy the listed documents and the [decisions](decisions.md).
+Work proceeds in vertical slices, between fixed gates.
+A slice is the smallest unit of work that ends in a measurement.
+This document gives the method: the slice rule, the slice kinds, the thinning axes, the
+rails, the shared artifacts, the gates, the order rule, and the cadence.
+The plan contract is in the [index](index.md).
+Decision [D10](decisions.md#d10) anchors the method.
 
-## Phase 0 — Bootstrap
+## The slice rule
 
-- **Scope:** the monorepo scaffold, CI, the OpenTofu persistent stack, the development
-  host (`infra/dev`), a train-stack round trip from CI, the spend guardrails, the
-  runbooks, and the autonomous-development environment (toolchain, scoped credentials,
-  OpenBSD qemu image, `CLAUDE.md`).
-- **Exit criteria:**
-  - CI is green.
-  - CI applies and destroys the train stack end to end (`make infra-up STACK=train`,
-    then `make infra-down STACK=train`), with the pipeline credential.
-  - The development host is provisioned from `infra/dev`, and a rebuild from code
-    reproduces it.
-  - The spend guardrails are active: the billing alerts, the pre-apply consumption
-    check, and the idle watchdog.
-  - A development agent completes a full cycle without aid: plan → implement →
-    `make check` → PR.
-- **Documents:** [repository](repository.md), [infrastructure](infrastructure.md),
-  [autonomous development](agents.md), [licensing and release](licensing.md).
+Each slice must end in a measurement on a real target:
 
-## Phase 1 — Corpus
+- a scorecard row from an evaluation suite ([evaluation](evaluation.md)),
+- a benchmark number against a budget ([inference](inference.md#latency-budget)), or
+- a scenario set that passes in an OpenBSD guest.
 
-- **Scope:** mirror synchronization, the extraction pipeline, and both corpora with
-  license tags.
-- **Exit criteria:** `make data` reproducibly makes tagged, deduplicated,
-  license-classed text.
-  The corpus and licensing notes are published.
-- **Documents:** [corpus](corpus.md), [licensing and release](licensing.md).
+A slice must not end at an unmeasured component.
+A slice is one plan in `docs/plans/`. A slice can span documents, and the plan cites
+each unit that it touches.
 
-## Phase 2 — Harness slice and baseline evaluation
+## Slice kinds
 
-- **Scope:** build the **harness slice**: the shared artifacts (the system prompt, the
-  tool metadata table and its JSON schemas, the error templates, and the re-prompt
-  texts), and a minimal agent loop that drives a model through the agentic scenarios in
-  the OpenBSD guests. The slice implements these units:
+Two slice kinds exist, and a plan names its kind.
 
-  - [HRN-PERL](harness.md#hrn-perl), [HRN-TOOL-TABLE](harness.md#hrn-tool-table),
-    [HRN-TOOL-REPORT](harness.md#hrn-tool-report), [HRN-CALLS](harness.md#hrn-calls),
-    [HRN-TRUNC](harness.md#hrn-trunc), and
-    [HRN-SAFE-DRYRUN](harness.md#hrn-safe-dryrun), in full.
-  - [HRN-LOOP](harness.md#hrn-loop) without HRN-LOOP-1.
-  - [HRN-CONFIRM](harness.md#hrn-confirm) without HRN-CONFIRM-6 and HRN-CONFIRM-10.
-  - [HRN-INVOKE](harness.md#hrn-invoke) without HRN-INVOKE-5.
-  - [HRN-TOOL-RO](harness.md#hrn-tool-ro) without HRN-TOOL-RO-4.
-  - [HRN-TOOL-GATE](harness.md#hrn-tool-gate) without HRN-TOOL-GATE-5.
-  - [HRN-PROMPT](harness.md#hrn-prompt) without HRN-PROMPT-2 and without the skill-list
-    chunk.
-  - [HRN-BUDGETS](harness.md#hrn-budgets) without the context-overflow compaction.
-  - A part of [INF-RUNTIME](inference.md#inf-runtime): the grammar constraint, prompt
-    caching, and context shift off.
+### Capability slice
 
-  The slice defers every other harness unit to Phase 6, among them the three-process
-  privilege separation ([HRN-PROC](harness.md#hrn-proc)), pledge and unveil
-  ([HRN-SAFE-PLEDGE](harness.md#hrn-safe-pledge)), the doas C wrappers
-  ([HRN-SAFE-WRAP](harness.md#hrn-safe-wrap)), the control socket
-  ([HRN-SOCKET](harness.md#hrn-socket)), and the port ([HRN-PKG](harness.md#hrn-pkg)).
-  The [implementation register](STATUS.md) lists each unit and its “Done by” phase.
-  Build the OpenBSD QA and agentic evaluation sets.
-  Measure the [baseline grid](evaluation.md#baselines-and-ablations): the base model
-  zero-shot, and the base model with the retrieval tool, both through the slice.
-  Re-survey the Qwen line and pin the base-model revision ([base model](model.md)).
-  Measure CPU tokens/s on real OpenBSD hardware with `llama-bench`, and measure full
-  agent turns against the [latency budget](inference.md#latency-budget).
+A capability slice adds behavior to the software: the harness, the data pipeline, the
+evaluation suites, or the infrastructure.
+The plan states the units that it implements, the units that it implements in part, and
+the units that it defers.
+The plan states the measurement that ends the slice.
+Tests and scenarios verify a capability slice.
 
-- **Exit criteria:** the shared artifacts are versioned in the repository.
-  A baseline scorecard covers the pre-training rows of the grid.
-  The first published OpenBSD CPU inference benchmark exists, with full-turn latency
-  against the budget. If the retrieval baseline reaches the
-  [release bars](evaluation.md#release-bars), a human reviews the value of training
-  before Phase 3 starts.
+### Experiment slice
 
-- **Documents:** [evaluation](evaluation.md), [inference](inference.md),
-  [harness](harness.md), [base model](model.md).
+An experiment slice changes the model or its data: an augmentation campaign, a CPT run,
+an SFT run, or a quantization.
+The plan states a hypothesis: the metric that the slice must move, and the amount.
+The plan states the grid rows that the measurement compares against
+([evaluation](evaluation.md#baselines-and-ablations)). The plan states a cost cap in
+euros, inside the monthly budget ([TRN-BUDGET](training.md#trn-budget)). A grid delta
+verifies an experiment slice.
 
-The slice exists so that the riskiest assumption — a 4B CPU model can drive the tool
-loop — meets evidence before the training spend, and so that Phase 4 traces and the
-agentic suite have real schemas and a real loop to run against.
+## Thinning axes
 
-## Phase 3 — Continued pretraining
+A slice is thin on one or more named axes.
+The plan names each axis.
 
-- **Scope:** generate the synthetic augmentation of the clean corpus with the Qwen3-32B
-  teacher, under the judge filter ([corpus](corpus.md#synthetic-augmentation),
-  [training](training.md#augmentation-generation)). QLoRA CPT on the clean corpus plus
-  the augmentation (H100-1-80G), with replay data and a low learning rate.
-- **Exit criteria:** a CPT checkpoint with better domain perplexity than the base, a
-  gain over the base on the OpenBSD QA set, and no MMLU regression.
-- **Documents:** [corpus](corpus.md), [training](training.md),
-  [infrastructure](infrastructure.md), [evaluation](evaluation.md).
+- **Feature.** The slice implements a subset of the units and the rules.
+  The plan defers the rest.
+- **Scale.** The slice runs every pipeline stage on a small input: a corpus sample, few
+  training steps, a small evaluation subset.
+  The first slice through a new pipeline must be scale-thin.
+  It proves the seams before the spend.
+- **Fidelity.** The slice measures on a substitute target: an amd64 qemu guest for the
+  arm64 hardware, or a smoke subset for a full suite.
 
-## Phase 4 — SFT and agentic tuning
+A thin measurement does not satisfy a gate that requires full scale or full fidelity.
 
-- **Scope:** generate synthetic tool-use traces with the Qwen3-32B teacher, from the
-  shared harness artifacts of Phase 2: the system prompt, the tool schemas, and the
-  error templates ([training](training.md)). Roll each trace out against a disposable
-  OpenBSD guest, so each tool result is real output.
-  Judge-filter the rollouts.
-  Generate the grounded QA slice ([training](training.md#sft-pass)). Run SFT from the
-  CPT checkpoint, on the traces and the grounded QA slice.
-- **Exit criteria:** TTX 1 meets the pre-registered
-  [release bars](evaluation.md#release-bars), measured against the full
-  [baseline grid](evaluation.md#baselines-and-ablations).
-  The escalation decision (4B versus 8B) is made.
-- **Documents:** [training](training.md), [evaluation](evaluation.md),
-  [base model](model.md), [corpus](corpus.md).
+## Rails
 
-## Phase 5 — Quantization and export
+A rail is an invariant.
+A slice must not thin a rail.
+These are the rails:
 
-- **Scope:** GGUF at Q4_K_M (canonical), Q5_K_M, and Q3_K_M. Validate quality retention.
-  Sign the artifacts.
-- **Exit criteria:** signed GGUF artifacts, and a quantization quality report.
-- **Documents:** [inference](inference.md), [licensing and release](licensing.md).
+- The license lanes (D6, [COR-LANES](corpus.md#cor-lanes)).
+- The credential scopes (D9, [IAC-CRED](infrastructure.md#iac-cred)).
+- The spend guardrails (D9, [IAC-SPEND](infrastructure.md#iac-spend)).
+- The dry-run and confirmation gates, in every loop that a model drives
+  ([HRN-SAFE-DRYRUN](harness.md#hrn-safe-dryrun)).
+- The pre-registration of the release bars ([EVL-BARS](evaluation.md#evl-bars)).
 
-## Phase 6 — Harness completion
+Build a rail just in time: in the first slice that can violate the invariant, or before
+that slice. Do not build a rail before a slice needs it.
 
-- **Scope:** complete the Phase 2 slice into the full Perl harness:
-  [HRN-PROC](harness.md#hrn-proc), [HRN-SAFE-PLEDGE](harness.md#hrn-safe-pledge),
-  [HRN-SAFE-WRAP](harness.md#hrn-safe-wrap), [HRN-SOCKET](harness.md#hrn-socket), and
-  [HRN-TRANSCRIPT](harness.md#hrn-transcript).
-  Phase 6 completes each unit that the [implementation register](STATUS.md) lists with
-  “Done by” 6. The llama-server integration study: the grammar constraint, prompt
-  caching, context shift, the `/tokenize` endpoint, the sampler settings, and the abort
-  of an in-flight generation ([harness](harness.md)). The transcript append discipline:
-  the atomicity of one record write on a crash, and the fsync policy.
-  The port skeleton builds.
-- **Exit criteria:** the end-to-end TTX agent passes the evaluation suite in a VM, with
-  no safety escape.
-- **Documents:** [harness](harness.md), [evaluation](evaluation.md),
-  [inference](inference.md).
+## Shared artifacts
 
-## Phase 7 — TTX 1 release
+The system prompt, the tool metadata table and its JSON schemas, the error templates,
+the re-prompt texts, and the scorecard format are the shared artifacts.
+The shared artifacts are the durable contracts between slices.
+A slice can discard implementation code behind an artifact.
+A slice that changes a shared artifact must version the artifact, and must re-run each
+measurement that reads it.
+Each trace and each scorecard records the artifact version.
 
-- **Scope:** the weights (Apache 2.0), the model card, the harness port, the
-  documentation, and the benchmark publication.
-- **Exit criteria:** a signed and published release.
-- **Documents:** [licensing and release](licensing.md).
+## Gates
 
-## Phase 8 — Variants
+A gate is a fixed checkpoint between slices.
+A human decides at each gate (D8). A gate reads measurements, not plans.
+The slice order between gates is free.
+The gate order is fixed:
 
-- **Scope:** build the evaluation suites for the candidate personas.
-  Run TTX 1 against them.
-  Apply the promotion rule.
-  Train and release the overlays that earn a release.
-- **Exit criteria:** a recorded promotion decision for each candidate.
-  Promoted variants are released with the same discipline as TTX 1.
-- **Documents:** [variants](variants.md), [training](training.md),
-  [evaluation](evaluation.md), [licensing and release](licensing.md),
-  [base model](model.md).
+1. **The pin gate.** A re-survey pins the base-model revision
+   ([MDL-PIN](model.md#mdl-pin)). Training spend must not start before the pin (D1).
+2. **The retrieval gate.** The gate opens when the grid holds the B0 and B1 rows.
+   If B1 reaches the [release bars](evaluation.md#release-bars), a human reviews the
+   value of training before the first CPT campaign.
+3. **The CPT gate.** The gate opens when the grid holds the C0 row.
+   If C0 − B0 is small on the domain suites, a human reviews the CPT method before the
+   first SFT campaign ([RSK-CPT](risks.md#rsk-cpt)).
+4. **The release gate.** A release requires all of these: every release bar met on the
+   full grid, zero red-team escapes, a green harness smoke suite on the target arm64
+   hardware (D2), signed artifacts ([LIC-RELEASE](licensing.md#lic-release)), and a
+   register with no `open` or `partial` unit outside [variants](variants.md).
+5. **The variant gate.** The promotion rule decides each variant
+   ([VAR-PROMOTE](variants.md#var-promote), D5).
+
+## The order rule
+
+A slice queue holds the candidate slices.
+Sort the queue by risk retired per euro:
+
+1. Name the assumption that the slice tests.
+2. Estimate the damage if the assumption is false.
+3. Estimate the cost of the slice, in euros and in days.
+4. Take the slice with the largest damage-to-cost ratio.
+
+Re-sort the queue after each slice, on the new measurements.
+
+### The walking skeleton
+
+The first slice is the walking skeleton, a capability slice:
+
+- The base model as GGUF, without training.
+- The re-survey and the revision pin, so the pin gate closes here.
+- A minimal agent loop on the shared artifacts.
+- One agentic scenario in one OpenBSD qemu guest.
+- One scorecard, and a latency measurement against the
+  [latency budget](inference.md#latency-budget).
+
+The skeleton produces the B0 row of the grid.
+Each later slice replaces one part of the skeleton and re-measures.
+The retrieval slice adds the `man` tool and produces the B1 row, so the retrieval gate
+opens before any training spend.
+
+### The lead assumptions
+
+The queue starts at the assumptions with the largest damage:
+
+- A 4B model on the CPU drives the tool loop inside the latency budget
+  ([INF-LATENCY](inference.md#inf-latency)).
+- Retrieval alone does not reach the release bars ([EVL-GRID](evaluation.md#evl-grid)).
+- The training pipeline holds together end to end.
+  A scale-thin tracer run tests this assumption, for a few euros.
+- The synthetic augmentation adds knowledge ([RSK-CPT](risks.md#rsk-cpt),
+  [RSK-SYNTH](risks.md#rsk-synth)).
+
+## Cadence
+
+Two loops run at two speeds.
+
+- **The inner loop** runs capability slices: CI, the qemu suite, and `make check`. It
+  spends no GPU money.
+  It can iterate daily.
+- **The outer loop** runs experiment slices as campaigns on the train stack (D3). A
+  campaign provisions the instance, runs the slice, measures, and destroys the instance.
+  The monthly budget bounds the loop ([TRN-BUDGET](training.md#trn-budget)).
+
+Batch GPU work into campaigns.
+Do not hold an idle GPU between slices.
