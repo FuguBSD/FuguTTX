@@ -860,7 +860,7 @@ tracing, and captures a trace corpus.
 A render experiment needs a captured corpus first, so this iteration produces the corpus
 rather than only runs scripts.
 
-**The three gates sit between P0 and P1.** Section 15 gives them.
+**The three approvals sit between P0 and P1.** Section 15 gives them.
 
 **Phase P1 builds the minimum lab.** P1.1 builds the API, the lease logic, the run
 database, the test runner, and the artifact store against an OpenBSD/arm64 virtual
@@ -890,21 +890,23 @@ Every figure in this paragraph is an **estimate**, because no public measurement
 OpenBSD/arm64 kernel build on Apple Silicon exists.
 P1.3 measures all of them.
 
-## 15. The three gates
+## 15. The three approvals
 
 Three separate approvals exist.
 They are not interchangeable.
 All three sit before any tier-3 spend.
+They are approvals inside this body of work, and they are not the five fixed gates of
+the [roadmap](../../spec/roadmap.md).
 
-**Gate 1, the reviewer gate.** This is gate G0 of the draft plan, and check K2 of
-section 4. The exit is a written strategy decision and a named OpenBSD developer who
-will review and commit the result.
+**Approval 1, the reviewer.** This is gate G0 of the draft plan, and check K2 of section
+4\. The exit is a written strategy decision and a named OpenBSD developer who will
+review and commit the result.
 No named reviewer means the plan ends at P0, and the CPU measurement duty is the whole
 of the work. This gate comes first, because it is the cheapest and the most likely to
 fail: OpenBSD has no kernel Rust, and no OpenBSD developer has proposed an AGX driver in
 public.
 
-**Gate 2, the spend gate.** [D8](../../spec/decisions.md#d8) reserves four decisions to
+**Approval 2, the spend.** [D8](../../spec/decisions.md#d8) reserves four decisions to
 humans: merges, release signatures, licensing lanes, and spend above the budget.
 [spec/index.md](../../spec/index.md) sets a monthly budget of EUR 1,500 for cloud spend,
 and it names no line for capital hardware.
@@ -912,7 +914,7 @@ Every purchase in this document therefore needs a human spend decision, includin
 tier-1 controller and the tier-2 rental.
 This gate is separate from the D2 question.
 
-**Gate 3, the decision gate.** [D2](../../spec/decisions.md#d2) states that the decision
+**Approval 3, the decision.** [D2](../../spec/decisions.md#d2) states that the decision
 is “CPU only on the target hardware”, that it is not “OpenBSD has no GPU path”, and that
 a move to GPU inference is an escalation that needs a new decision.
 Phase P2 is that escalation.
@@ -921,9 +923,10 @@ the P0.1 baseline, the P0.2 measurement, the P0.5 light-loop result, the P0.6 AB
 evidence, and the honest expected gain: prompt processing only, with token generation
 unchanged on the M1.
 
-Order matters. Gate 1 comes before gate 2, because a failed reviewer search makes the
-spend pointless. Gate 2 comes before gate 3, because a refused spend makes the decision
-moot.
+Order matters.
+Approval 1 comes before approval 2, because a failed reviewer search makes
+the spend pointless.
+Approval 2 comes before approval 3, because a refused spend makes the decision moot.
 
 ## 16. Cost, and the alternatives
 
@@ -953,7 +956,7 @@ target. Phase P2 spends the rest.
 The draft plan prices the driver at about 15 to 30 person-months, and then maintenance
 without end. That is 2,400 to 4,800 engineer-hours.
 Firmware-ABI kernel code cannot merge without review, so a substantial part of those
-hours stays senior human review, and gate 1 exists because the project does not have
+hours stays senior human review, and approval 1 exists because the project does not have
 that reviewer today.
 Continuous agent operation across thousands of build, boot, test, and recover cycles is
 itself a recurring cost against the monthly budget that D8 reserves to humans.
@@ -1087,7 +1090,7 @@ Each names the method that resolves it, and the iteration that owns it.
 12. Whether the `GPL-2.0` licence of Linux `drm_gem_shmem_helper.c`, which carries no
     MIT arm, blocks a copy into OpenBSD base.
     The OpenBSD DRM tree already carries `drm_gpuvm.c` and `drm_exec.c` under dual
-    licences. Resolve by a question to the reviewer found at gate 1. Owner: P0.3 and
+    licences. Resolve by a question to the reviewer found at approval 1. Owner: P0.3 and
     P0.4.
 
 Three further checks belong to the driver, and not to the lab.
@@ -1104,26 +1107,28 @@ Three further checks belong to the driver, and not to the lab.
 ## 18. Decision pressure
 
 This document changes no specification text.
-It touches four decisions.
+It touches five decisions.
 
 **D2 — one escalation, and one duty that runs the other way.**
 [D2](../../spec/decisions.md#d2) states “CPU only on the target hardware”, and states
 that a move to GPU inference needs a new decision.
 Phases P0 and P1 run no GPU inference on the target hardware, so they do not touch D2.
-Phase P2 does, and gate 3 is where a human approves or refuses it.
+Phase P2 does, and approval 3 is where a human approves or refuses it.
 D2 also supplies an argument for the lab: the harness smoke suite must pass on the
 target arm64 hardware before a release, whatever happens to FuguAGX.
 
 **D7 — a naming collision, and not a conflict.** [D7](../../spec/decisions.md#d7) fixes
-Perl 5 with base modules plus `Fugu::REPL` for the harness body, states that Python must
-not ship to the OpenBSD target, and states that the harness must not install from CPAN
-on the target. The lab control plane runs on the controller, and never on an OpenBSD
-target, so D7 does not constrain its language.
+Perl 5 with base modules plus the Fugu module allow-list for the harness body, states
+that Python must not ship to the OpenBSD target, and states that the harness must not
+install from CPAN on the target.
+The lab control plane runs on the controller, and never on an OpenBSD target, so D7 does
+not constrain its language.
 The collision is in the word alone, and the naming rule at the head of this document
 removes it.
 
 **D8 — two obligations.** D8 reserves spend above the budget to humans, which is why
-gate 2 exists. D8 also states that each outcome has a machine-checkable definition of
+approval 2 exists.
+D8 also states that each outcome has a machine-checkable definition of
 done, which is why every rung of section 13 carries a checkable pass condition, and why
 the idle period of L1 and the tolerance of L5 must be numbers.
 
@@ -1136,6 +1141,20 @@ The watchdog blocks.
 Power telemetry and SMC sensors notify.
 The mitigation for the PMU boot error counter gates, because it runs as lab code before
 each soak cycle.
+
+**D10 — the plan method, and one more naming collision.**
+[D10](../../spec/decisions.md#d10) states that work proceeds in vertical slices, that a
+measurement ends each slice, that a slice must not end at an unmeasured component, and
+that risk retired per euro orders the slices.
+The staged plan of section 14 obeys all four.
+Every iteration ends in a measurement, and phase P0 comes first because it retires the
+most risk for the least money.
+An engineer who starts this work must write each iteration as a plan in `plans/`, and
+must name its kind. The collision is in the word “gate”.
+[roadmap](../../spec/roadmap.md) fixes five gates in a fixed order, and a human decides
+at each one. The three approvals of section 15 are not those gates.
+They are approvals inside one body of work, and a reader must not confuse them with the
+pin, retrieval, CPT, release, and variant gates of the roadmap.
 
 **One security note.** The controller holds SSH keys to every target, drives DFU
 restores, power-cycles outlets, and exposes an API to an autonomous agent.
