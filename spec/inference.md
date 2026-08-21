@@ -132,6 +132,10 @@ FuguTTX must do this work:
 3. Run `llama-bench` again, and record the difference.
 4. Send both results to the port maintainer.
 
+The arm64 ports build and the re-bench of this unit run on arm64 hardware.
+The `fuguvm` tool supplies an arm64 OpenBSD guest for each port build, and each
+`llama-bench` run stays on the target machine.
+
 GPU work must not start without these results.
 
 <a id="inf-quant"></a>

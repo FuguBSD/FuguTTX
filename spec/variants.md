@@ -64,6 +64,9 @@ ships. That result is a success, not a failure.
 | **TTX 1 Port** | Ports-tree maintenance: Makefiles, `bsd.port.mk`, PLIST discipline, port updates to new upstream releases. | Strongest candidate. A port builds, or it does not. `portcheck` and `make port-lib-depends-check` are machine-checkable. “Update port X to upstream release Y” grades end to end in a qemu VM. |
 | **TTX 1 Code** | OpenBSD-flavored development: patches against the ports and src trees, Perl, shell, `rc.d` scripts. | Weakest candidate. No known benchmark exists for OpenBSD src work. The suite must be built: does the patch apply, compile, and pass regress? Kernel and libc patch generation is out of scope for this size class. |
 
+A port evaluation builds the port in a disposable guest of the agentic suite
+([EVL-AGENTIC](evaluation.md#evl-agentic)).
+
 The two candidates overlap where code work touches the ports tree.
 If their evaluation suites show large overlap, merge them into one contributor variant.
 Do not ship two models that a user must select between.

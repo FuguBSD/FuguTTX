@@ -51,8 +51,13 @@ Two port dependencies exist: llama.cpp and p5-Fugu.
 Base Perl has no `imsg_init(3)` interface.
 The harness frames each internal message as a length-prefixed `JSON::PP` record over
 `socketpair(2)`. A length-prefixed frame in Perl is memory-safe by construction.
-A framing defect raises an exception.
+A framing defect in the harness code raises an exception.
 It does not corrupt the heap.
+
+The Fugu distribution holds `Protocol::Imsg`, a core-Perl imsg(3) frame codec.
+The import rule of [D7](decisions.md#d7) excludes it, so the harness carries its own
+frame code. The codec reports a framing failure through `$!` and a return value, and not
+through an exception.
 
 <a id="hrn-perl"></a>
 
@@ -118,7 +123,7 @@ must not hold `exec`**. Model output is untrusted input.
 
 | Process | Role | pledge, after setup | unveil |
 | --- | --- | --- | --- |
-| Parent (engine) | Policy, tool execution, audit | `stdio rpath wpath cpath proc exec` | the diagnostic binaries (x), the doas wrappers (x), `/usr/bin/doas` (x), the candidate directory (rwc), the `ttxd` binary (x), `/var/log/ttx` (rwc), `/etc` (r), `/usr/share/man` (r) |
+| Parent (engine) | Policy, tool execution, audit | `stdio rpath wpath cpath proc exec` | the diagnostic binaries (x), the doas wrappers (x), `/usr/bin/doas` (x), `/usr/bin/diff` (x), the candidate directory (rwc), the `ttxd` binary (x), `/var/log/ttx` (rwc), `/etc` (r), `/usr/share/man` (r) |
 | Model process | HTTP to llama-server, JSON parsing | `stdio` | nothing |
 | Frontend process | Control socket, session, confirmations | `stdio unix` | the socket path |
 
@@ -126,8 +131,10 @@ must not hold `exec`**. Model output is untrusted input.
   transcript (see [session transcript](#session-transcript)). It never sees raw model
   output. It parses only the fixed internal record format, which the harness itself
   defines. The unveil row is a complete enumeration: it names each diagnostic binary the
-  parent can run without doas, the doas wrappers, the candidate directory it writes, the
-  log directory, and the `ttxd` binary it re-executes to respawn a child.
+  parent can run without doas, the doas wrappers, `diff(1)`, the candidate directory it
+  writes, the log directory, and the `ttxd` binary it re-executes to respawn a child.
+  The parent builds each diff of [HRN-TOOL-GATE-1](#hrn-tool-gate) with base `diff(1)`,
+  so the enumeration holds that binary.
   The candidate directory is not `/etc`, because `/etc` is read-only to the parent.
 - **The model process** speaks HTTP to `llama-server` and parses model output with
   `JSON::PP`. It reduces each valid tool call to a fixed internal record for the parent.
@@ -216,13 +223,18 @@ uniform across the FuguBSD tools.
 - **HRN-REPL-9.** When standard input is not a terminal, the module must read plain
   lines, with no line editing and no escape output.
   The test suites drive the client in this mode.
+- **HRN-REPL-10.** The module must not read a terminfo file.
+  It must use a fixed escape-sequence set, because the client pledge gives no file
+  access.
+- **HRN-REPL-11.** The interface contract of the module is the `.pod` sidecar of the
+  module in the Fugu repository.
+  FuguPass CLI-IFACE and CLI-REPL cite the same contract, so a change to it coordinates
+  with FuguPass through Fugu.
 
 The module holds the terminal in raw mode only while it reads a line.
 It restores the terminal state before command dispatch and on every exit path.
 The editor implements a fixed emacs-style key subset over the core `POSIX` termios
 interface, with tab completion from a callback.
-The interface contract of the module lives in the Fugu repository.
-A change to that contract coordinates with FuguPass through Fugu.
 
 <a id="hrn-confirm"></a>
 
@@ -384,6 +396,9 @@ The frontend therefore relays one coarse event per loop stage to the client: mod
 started, tool started (with the tool name), and confirmation pending.
 These events are transient.
 They do not enter the transcript.
+The client shows each event through the `Fugu::REPL` module ([HRN-REPL](#hrn-repl)). The
+module writes a transient status line, and it then restores the prompt line and the
+cursor. An event text must not enter the input history.
 
 <a id="hrn-invoke"></a>
 
@@ -693,6 +708,9 @@ Safety is first-class, not optional.
   break a UTF-8 sequence when it filters.
   The client must cap the diff size, and it must guard against a scroll that hides a
   hunk. The displayed diff comes from the parent, never from model text.
+  [HRN-REPL-7](#hrn-repl) puts this filter in the `Fugu::REPL` module, and the module is
+  its one home. The filter must work under taint mode, because each client runs with
+  `perl -T`.
 
 - <a id="hrn-safe-record"></a>**The internal record channel is a trust boundary.** A
   parser bug can compromise the model process, or a lying `llama-server` can feed it.

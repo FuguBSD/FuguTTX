@@ -18,6 +18,7 @@ The boundary is where the code runs.
 | GPU runtime | Upstream Docker images (Axolotl for training, vLLM for the teacher) on the Scaleway GPU OS image | No custom environments on ephemeral instances. The uv workspace runs on the operator machine and in CI, not on the GPU. |
 | Harness body | Perl 5 from OpenBSD base, base modules plus `Fugu::REPL` from the p5-Fugu package | Perl, `OpenBSD::Pledge(3p)`, and `OpenBSD::Unveil(3p)` ship in base. The OpenBSD package tools follow the same discipline. The Fugu library supplies the shared REPL module ([harness](harness.md#hrn-repl)). |
 | doas target wrappers | C, against libc alone | The privileged side of doas. A small C wrapper avoids the interpreter startup surface under doas, and libc gives `pledge(2)`, `unveil(2)`, and `execv(3)`. See [D7](decisions.md) and [harness](harness.md). |
+| OpenBSD guests | The `fuguvm` tool, over qemu | One tool installs and operates each guest, so the FuguBSD projects share one guest lifecycle. |
 | Infrastructure as code | OpenTofu, with the Scaleway provider | Open-source IaC agrees with the project license ethos. It makes the ephemeral GPU lifecycle safe and repeatable. |
 | Task runner | `make` | One polyglot entry point for Python, Perl, and OpenTofu. `make` needs no installation step. |
 | External dependencies | `deps/<OS>.txt` manifests, installed by `scripts/deps` | The shared FuguBSD bootstrap script installs OS packages, CPAN modules, and prebuilt binaries the same way in every repository. FuguBSD/Tooling holds the canonical copy of the script. |
@@ -25,6 +26,12 @@ The boundary is where the code runs.
 | Inference runtime | llama.cpp everywhere | The same runtime serves development (Metal on Apple Silicon) and production (OpenBSD CPU). What is validated is what ships. |
 | Teacher/judge model | Qwen3-32B teacher (Apache 2.0), served by vLLM on the H100; a release judge from a different model family | Clean license provenance for synthetic data. The teacher writes the corpus augmentation, and it proposes and filters traces. A judge outside the Qwen family grades each release bar ([evaluation](evaluation.md)). |
 | CI | GitHub Actions | The repository and the corpus mirrors are on GitHub. CI validates each push, and it operates the pipeline with the scoped pipeline credential ([infrastructure](infrastructure.md)). |
+
+- **REP-TOOLS-1.** The repository operates each OpenBSD guest with the `fuguvm` tool,
+  and it holds no qemu command line.
+  A global option comes before the subcommand.
+  The repository must not load an `App::FuguVM` module, because a sibling application is
+  not a library.
 
 <a id="rep-layout"></a>
 
@@ -79,6 +86,13 @@ fuguttx/
 The top-level `make check` runs each local lint, test, and validation step.
 It must pass before each commit.
 CI runs the same gate.
+
+- **REP-RECIPES-1.** The guest targets are `make vm-up`, `make vm-down`,
+  `make vm-snapshot NAME=<name>`, `make vm-restore NAME=<name>` and `make vm-clean`.
+  Each target runs the `fuguvm` tool.
+  A target must act on the exit code.
+  Exit code 11 reports an absent snapshot, and the target then installs the guest again.
+  Exit code 5 reports a running guest, and exit code 7 reports a timeout.
 
 <a id="rep-ci"></a>
 
