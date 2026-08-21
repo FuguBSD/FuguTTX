@@ -1,4 +1,4 @@
-# 012 — The Fugu module allow-list of the harness
+# 001 — The Fugu module allow-list of the harness
 
 ## Status
 
