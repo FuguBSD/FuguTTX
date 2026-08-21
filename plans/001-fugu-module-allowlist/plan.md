@@ -149,7 +149,7 @@ to hold under D7 as it stands.
 | `Fugu::REPL` | `HRN-REPL`; HRN-REPL-1 to HRN-REPL-9 | `new`, `read_line`, `event`, `ready_handle`, `confirm`, `display_filter`, `show`, `help_text`, `history`, `is_interactive`, `restore` | Nothing. D7 permits this module. The module does not exist in Fugu yet, and `/home/user/Fugu/plans/001-fugu-repl/plan.md` holds its contract |
 | `Fugu::Sandbox` | `HRN-SAFE-PLEDGE` and `HRN-PROC`; neither unit holds a numbered rule | `is_supported`, `pledge`, `unveil`, `unveil_lock`, `perl_lib_dirs`, `system_paths` | The harness calls `OpenBSD::Pledge` and `OpenBSD::Unveil` itself. It also enumerates the library directories of the perl that runs, and the resolver files, itself |
 | `Fugu::Log` | `HRN-SAFE-AUDIT`; the unit holds prose, and it holds no numbered rule | `new` with `mode`, `level`, `ident` and `facility`; `debug`, `info`, `notice`, `warning`, `error`; `set_level`; `reopen`; `default`; `set_default` | The harness calls `Sys::Syslog` itself, and it writes its own level filter. The module does not pin `setlogsock('native')` today, so this row needs Fugu plan 005 |
-| `Fugu::Process` | `HRN-TOOL-RO`, HRN-TOOL-RO-1 to HRN-TOOL-RO-4; `HRN-TOOL-GATE`, HRN-TOOL-GATE-1 to HRN-TOOL-GATE-5; `HRN-CANCEL`, which holds no numbered rule | `run` with `cmd`, `timeout`, `stdin`, `cwd` and `passthrough`; `spawn_command` with `cmd`, `daemonize`, `stdin`, `stdout` and `stderr`; `exit_code`; `is_alive`; `terminate` with `grace_period` and `on_kill`; `wait_exit` | The harness writes its own fork and exec, its own reader of two descriptors at the same time, its own timeout, and its own decode of the wait status |
+| `Fugu::Process` | `HRN-TOOL-RO`, HRN-TOOL-RO-1 to HRN-TOOL-RO-4; `HRN-TOOL-GATE`, HRN-TOOL-GATE-1 to HRN-TOOL-GATE-5; `HRN-CANCEL`, which holds no numbered rule | `run` with `cmd`, `timeout`, `stdin`, `cwd` and `passthrough`; `spawn_command` with `cmd`, `daemonize`, `stdin`, `stdout` and `stderr`; `exit_code`; `is_alive`; `terminate` with `grace_period` and `on_kill`; `wait_exit` | The harness writes its own fork and exec. It also writes its own reader of two descriptors, its own timeout, and its own decode of the wait status |
 | `Fugu::Config` | `HRN-PKG`; the unit holds prose, and it holds no numbered rule | `new` with `file`; `load`; `get`; `setting_names`; `parse_bool`; `blocks`; `block`; `error` | The harness holds each setting as a constant of the program. HRN-PKG names the configuration directory `/etc/ttx`, and no unit defines a configuration file today |
 | `Fugu::File` | `HRN-CONFIRM`, HRN-CONFIRM-9 and HRN-CONFIRM-10; `HRN-SKILLS`, which holds no numbered rule | `read`, `write` with `mode`, `write_atomic` with `mode`, `ensure_dir` with `mode`, `valid_name` | The harness writes its own temporary file and its own rename. It also writes its own mode check for the candidate directory and for `/var/log/ttx`, and its own name check for a skill directory |
 | `Fugu::CLI` | `HRN-SPLIT` and `HRN-FETCH`; neither unit holds a numbered rule | `new` with `commands`, `name`, `options`, `usage`, `epilogue` and `log`; `run`; `option`; `options`; `command`; `name`; `log`; `print_help`; `usage_error`; `command_usage_error`; the codes `EXIT_SUCCESS` 0, `EXIT_ERROR` 1, `EXIT_INVALID_ARGS` 2, `EXIT_CONFIG_ERROR` 3 and `EXIT_TIMEOUT` 7 | The harness writes its own `Getopt::Long` setup for `ttx`, its own help text, and its own exit-code set |
@@ -243,9 +243,10 @@ The list holds each of those modules, so the harness loads no module outside the
 3. **The CI import check grows a list to maintain.** REP-CI holds a one-name rule today,
    and the list makes it a seven-name rule.
    The check and D7 must then agree, and a drift between them is silent.
-   The list must also stay closed under the load relation: a new `use` line inside a
-   Fugu module can widen what the target loads, with no change in this repository.
-   A check that reads the import lines of `harness/` alone does not see that widening.
+   The list must also stay closed under the load relation.
+   A new `use` line inside a Fugu module can widen what the target loads.
+   That widening needs no change in this repository.
+   A check that reads the import lines of `harness/` alone does not see it.
 
 4. **Four modules stay excluded, so the harness still writes four facilities.**
    `Fugu::Daemon`, `Fugu::EventLoop`, `Fugu::Imsg` and `Fugu::Control` are not on the
@@ -302,9 +303,15 @@ Under “no”:
 
 - The specification stays as it is.
   D7 stands, REP-CI stands, and HRN-LANG stands.
-- The harness writes each facility itself: the pledge and unveil calls, the unveil
-  enumeration, the syslog duplicate, the process control, the atomic file install, the
-  command line, and the configuration read.
+- The harness writes each facility itself.
+  The list holds seven facilities:
+  - the pledge and unveil calls
+  - the unveil enumeration
+  - the syslog duplicate
+  - the process control
+  - the atomic file install
+  - the command line
+  - the configuration read
 - Fugu deletes nothing.
   Plans 002 and 005 keep their other consumers: FuguOracle, FuguPass and FuguVM. Plan
   006 waits for an other consumer, or Fugu drops it.
