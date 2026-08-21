@@ -91,8 +91,8 @@ Traces target 8K tokens or less, to match the inference context budget.
 **The teacher proposes, and a rollout executes.** The rollout driver runs on the
 development host.
 It rolls each trace out against a disposable OpenBSD guest, through the
-harness slice ([roadmap](roadmap.md)), with a snapshot restore between traces.
-Each tool result in a trace is the real output of the guest.
+agent loop of the harness ([harness](harness.md#hrn-loop)), with a snapshot restore
+between traces. Each tool result in a trace is the real output of the guest.
 A teacher-written observation must not enter a trace.
 A trace with a fabricated observation teaches the model to expect fabricated systems.
 The driver reaches the teacher over an SSH tunnel to the train instance, and the vLLM
@@ -151,7 +151,7 @@ Continuous operation adds recurring items, per month:
 | Item | Cost per month |
 | --- | --- |
 | Development host (Elastic Metal, `infra/dev`) | approximately €200–450 |
-| GPU campaigns, in an active phase | approximately €300–800 |
+| GPU campaigns, in a campaign month | approximately €300–800 |
 | Object Storage, flexible IPs, and other items | below €50 |
 
 Each promoted variant adds approximately €50–150 of GPU time.

@@ -14,13 +14,13 @@ Training must earn its cost against the strongest untrained configuration.
 One grid measures that.
 Each row runs the same suites, through the same harness, with the same scorecard format:
 
-| Row | Configuration | Available from |
+| Row | Configuration | First measured by |
 | --- | --- | --- |
-| B0 | The pinned base model, zero-shot | Phase 2 |
-| B1 | The pinned base model, with the `man` retrieval tool | Phase 2 |
-| C0 | The CPT checkpoint | Phase 3 |
-| T0 | TTX 1 (CPT + SFT) | Phase 4 |
-| T1 | TTX 1, with the `man` retrieval tool | Phase 4 |
+| B0 | The pinned base model, zero-shot | The walking skeleton ([roadmap](roadmap.md)) |
+| B1 | The pinned base model, with the `man` retrieval tool | The retrieval slice |
+| C0 | The CPT checkpoint | The first CPT campaign |
+| T0 | TTX 1 (CPT + SFT) | The first SFT campaign |
+| T1 | TTX 1, with the `man` retrieval tool | The first SFT campaign |
 
 The retrieval baseline (B1) adds one read-only tool: `man`, which renders one page by
 name and section ([harness](harness.md)). No other row changes between B0 and B1. The
@@ -29,10 +29,10 @@ C0).
 
 Two rules act on the grid:
 
-- If B1 reaches the release bars in Phase 2, a human reviews the value of training
-  before Phase 3 starts ([roadmap](roadmap.md)).
-- If C0 − B0 is small on the domain suites, a human reviews the CPT method before Phase
-  4 starts ([risks](risks.md)).
+- If B1 reaches the release bars, a human reviews the value of training before the first
+  CPT campaign ([roadmap](roadmap.md)).
+- If C0 − B0 is small on the domain suites, a human reviews the CPT method before the
+  first SFT campaign ([risks](risks.md)).
 
 <a id="evl-bars"></a>
 
@@ -53,7 +53,7 @@ measurement runs. These are the initial bars:
 | Domain perplexity | Better than the base model |
 | Full-turn latency | Inside the [latency budget](inference.md#latency-budget) |
 
-The Phase 4 exit reads these bars ([roadmap](roadmap.md)). The escalation rule of the
+The release gate reads these bars ([roadmap](roadmap.md)). The escalation rule of the
 base model reads the same bars ([base model](model.md)).
 
 <a id="evl-domain"></a>

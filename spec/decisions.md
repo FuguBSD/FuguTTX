@@ -1,6 +1,6 @@
 # Decisions
 
-These nine decisions control all plans.
+These ten decisions control all plans.
 A plan must not go against a decision.
 To change a decision, change this document first.
 
@@ -14,7 +14,7 @@ fine-tune ecosystem support.
 Llama 3.x and Gemma 3 have custom licenses that are not OSI-approved.
 Those licenses do not agree with the permissive-only culture of OpenBSD. Those models
 are excluded. The family line has revisions.
-Phase 2 re-surveys the line and pins the exact revision, before any training spend.
+A re-survey pins the exact revision before any training spend ([roadmap](roadmap.md)).
 Details: [base model](model.md).
 
 <a id="d2"></a>
@@ -184,3 +184,18 @@ If a one-hour test proves `/dev/kvm` and an OpenBSD guest boot on a virtual inst
 the cheaper instance can become the host without a new decision.
 The four human decisions of D8 stand.
 Details: [infrastructure](infrastructure.md), [autonomous development](agents.md).
+
+<a id="d10"></a>
+
+## D10 — Plans are vertical slices, and a measurement ends each slice
+
+Work proceeds in vertical slices, between fixed gates.
+A slice is the smallest unit of work that ends in a measurement: a scorecard row, a
+benchmark number, or a passing scenario set.
+A slice must not end at an unmeasured component.
+A capability slice changes the software.
+An experiment slice changes the model or its data, and its plan states a hypothesis and
+a cost cap. A slice is thin on a named axis: feature, scale, or fidelity.
+A rail is an invariant, and a slice must not thin a rail.
+Risk retired per euro orders the slices.
+A human decides at each gate (D8). Details: [roadmap](roadmap.md).

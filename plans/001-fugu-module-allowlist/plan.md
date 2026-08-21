@@ -13,12 +13,18 @@ the harness body. Each one points at D7 for the names.
 names its module. `deps/Linux.txt` and `deps/Darwin.txt` install the Fugu distribution,
 so `prove` runs against the real modules.
 
+This plan is a reference plan, and the
+[index](../../spec/index.md#how-to-use-this-specification) gives that kind.
+It holds no slice, and it states no measurement.
+Each harness slice reads the module table below, and the slice plan carries its own
+slice kind, its thinning axes and its measurement.
+
 The harness holds no code, so the adoption starts from an empty tree.
-`roadmap.md` gives that work its scope in two phases.
-The harness slice adopts `Fugu::Process` for the read-only tools and the gated
-mutations, and it adopts `Fugu::File` for the candidate install of HRN-CONFIRM-9. The
-harness completion adopts each other row of the module table.
-`STATUS.md` gives each unit its “Done by” phase, and every HRN unit is `open` there.
+The walking skeleton of `roadmap.md` takes `Fugu::Process` for the read-only tools and
+the gated mutations.
+It takes `Fugu::File` for the candidate install of HRN-CONFIRM-9. A later slice takes
+each other row of the module table.
+Every HRN unit is `open` in `STATUS.md`.
 
 ## Purpose
 
@@ -87,7 +93,7 @@ Out of scope:
 
 - Any edit of a document under `spec/`. The specification holds the list already.
 - The harness code and its tests.
-  `roadmap.md` gives that work its phase.
+  A slice plan holds that work.
 - `Fugu::Daemon`, `Fugu::EventLoop`, `Fugu::Imsg`, `Fugu::Control`, `Fugu::Privdrop` and
   `Protocol::Imsg`. The list does not hold them.
 - A CPAN module. D7 reads: “The harness must not install from CPAN on the target.”
