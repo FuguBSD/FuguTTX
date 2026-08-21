@@ -18,7 +18,7 @@ A note can carry the date of a recorded fact.
 | n-a | No code can implement the unit. It exists for citation only. |
 
 The register holds no schedule.
-A slice plan in `docs/plans/` names the units that it implements, and the gates of the
+A slice plan in `plans/` names the units that it implements, and the gates of the
 [roadmap](roadmap.md) read the register.
 
 ## Update protocol

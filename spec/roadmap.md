@@ -16,8 +16,8 @@ Each slice must end in a measurement on a real target:
 - a scenario set that passes in an OpenBSD guest.
 
 A slice must not end at an unmeasured component.
-A slice is one plan in `docs/plans/`. A slice can span documents, and the plan cites
-each unit that it touches.
+A slice is one plan in `plans/`. A slice can span documents, and the plan cites each
+unit that it touches.
 
 ## Slice kinds
 

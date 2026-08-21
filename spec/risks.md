@@ -41,6 +41,9 @@ Automatic grades for sysadmin agentic tasks are hard.
 The qemu VM suite is real engineering work and a project dependency, not an
 afterthought. It has its own place in the [roadmap](roadmap.md).
 
+The `fuguvm` tool carries the guest lifecycle.
+FuguTTX therefore builds the scenarios, the grading, and the parallel driver only.
+
 <a id="rsk-cpt"></a>
 
 ## CPT can add too little knowledge

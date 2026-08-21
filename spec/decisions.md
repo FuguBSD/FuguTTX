@@ -110,8 +110,8 @@ Details: [corpus](corpus.md).
 ## D7 — Languages and tools are fixed
 
 Python for all model-side work.
-Perl for the harness body, with base modules plus `Fugu::REPL`. C for the doas target
-wrappers, against libc alone.
+Perl for the harness body, with base modules plus the Fugu module allow-list.
+C for the doas target wrappers, against libc alone.
 OpenTofu, 1.11 or later, for infrastructure.
 `make` as the task runner.
 Python must not ship to the OpenBSD target.
@@ -119,10 +119,15 @@ The harness must not install from CPAN on the target.
 Each harness dependency comes from OpenBSD base or from an OpenBSD package.
 The port dependencies are llama.cpp and p5-Fugu, and no other.
 
-The client interface comes from `Fugu::REPL`, a module of the sibling Fugu repository.
-The Fugu distribution is on CPAN, so it packages as the p5-Fugu port.
-The module loads with base modules only, and the client loads only this module from the
-distribution ([harness](harness.md#hrn-repl)).
+The Fugu module allow-list holds `Fugu::REPL`, `Fugu::Sandbox`, `Fugu::Log`,
+`Fugu::Process`, `Fugu::Config`, `Fugu::File` and `Fugu::CLI`. The harness must not load
+an other module of the distribution.
+Each module of the list loads with base modules only, so the target installs nothing
+from CPAN. `Fugu::REPL` must stand alone, and it must not load an other module of the
+list ([harness](harness.md#hrn-repl)). The Fugu distribution is on CPAN, so it packages
+as the p5-Fugu port.
+The list lives in this decision alone.
+[repository](repository.md#rep-ci) names the check, and it points here for the list.
 
 The harness has two sides, and the doas boundary divides them.
 Perl runs on the unprivileged side of doas.

@@ -100,6 +100,12 @@ endpoint binds to localhost on that instance.
 A trace enters the training set only when both checks pass: the scenario check passes in
 the guest, and the judge filter accepts the trace.
 
+The driver operates the guest with the `fuguvm` command.
+It copies the harness slice and the scenarios into the guest, and it copies each
+transcript out. It runs each step with `fuguvm ssh`, and it reads the returned exit code
+as the result. `fuguvm snapshot restore` returns the guest to the base snapshot between
+two traces.
+
 The harness format and the training format must not drift.
 The system prompt, the tool schemas, the error templates, and the re-prompt texts are
 shared artifacts, defined once in the repository.

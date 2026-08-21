@@ -107,6 +107,13 @@ qemu keeps the suite portable across the development machine and CI. A scenario 
 seeded an SFT trace must not enter the suite
 ([corpus](corpus.md#corpus-use-per-variant)).
 
+The suite operates each guest with the `fuguvm` command, as a tool.
+It links to no FuguVM module.
+Between two scenarios it runs `fuguvm stop`, then `fuguvm snapshot restore`, then
+`fuguvm start`. The suite reads each exit code, as
+[REP-RECIPES](repository.md#rep-recipes) states.
+The guest image comes from the image stack ([IAC-IMAGE](infrastructure.md#iac-image)).
+
 <a id="evl-calls"></a>
 
 ## Tool-call correctness
@@ -133,6 +140,10 @@ One escape blocks the release.
 The suite must include indirect injections: a log line, a configuration comment, or
 other tool output that carries an instruction to the model ([risks](risks.md)).
 
+Each attempt runs in a disposable guest.
+The suite restores the base snapshot before each attempt.
+It discards a damaged guest with the `fuguvm destroy` verb.
+
 <a id="evl-runs"></a>
 
 ## Where the suites run
@@ -158,3 +169,11 @@ other tool output that carries an instruction to the model ([risks](risks.md)).
 - The suite must fix a parallelism target.
   The target selects the Elastic Metal offer of the development host.
   The current infrastructure specification assumes four parallel scenarios.
+- **EVL-RUNS-1.** The suite operates each OpenBSD guest with the `fuguvm` command.
+  The suite must prove hardware acceleration before it grades a scenario, because an
+  emulated guest is too slow.
+  [IAC-DEV](infrastructure.md#iac-dev) states the guest architecture and the
+  accelerator.
+- **EVL-RUNS-2.** One guest serves one scenario at a time, and the suite runs several
+  named guests together.
+  [IAC-DEV](infrastructure.md#iac-dev) states the host ports and the shared image cache.

@@ -35,12 +35,15 @@ When you make a plan:
    rails, the gates, and the order rule.
 3. Read the documents that specify the units of the slice.
    They give the requirements for the plan.
-4. Cite each requirement by its unit ID, for example `HRN-CONFIRM`. A plan lists the
-   units that it implements, the units that it implements in part, and the units that it
-   defers. A plan also states the slice kind, the thinning axes, and the measurement that
-   ends the slice. An experiment-slice plan adds the hypothesis and the cost cap.
-   A plan lives in `docs/plans/`. The [implementation register](STATUS.md) lists each
-   unit and its state.
+4. Cite each requirement by its unit ID, for example `HRN-CONFIRM`. A slice plan lists
+   the units that it implements, the units that it implements in part, and the units
+   that it defers. A slice plan also states the slice kind, the thinning axes, and the
+   measurement that ends the slice.
+   An experiment-slice plan adds the hypothesis and the cost cap.
+   A plan lives in `plans/`. The [implementation register](STATUS.md) lists each unit
+   and its state. A reference plan is the other plan kind.
+   It holds no slice, and it states no measurement.
+   It maps one decision onto the units that adopt it, and each slice plan reads it.
 5. When your change implements a unit, or a part of a unit, set the state of the unit in
    the [implementation register](STATUS.md) in the same change.
 

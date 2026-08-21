@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SCAN = ["CLAUDE.md", "spec", "docs"]
+SCAN = ["CLAUDE.md", "spec", "docs", "plans"]
 
 FENCE_RE = re.compile(r"^[ \t]*(```|~~~)", re.MULTILINE)
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
@@ -314,9 +314,7 @@ def check_citations(
     for source in files:
         rel_source = source.relative_to(ROOT)
         parts = rel_source.parts
-        in_scope = (
-            parts[0] == "spec" or rel_source == Path("CLAUDE.md") or parts[:2] == ("docs", "plans")
-        )
+        in_scope = parts[0] in ("spec", "plans") or rel_source == Path("CLAUDE.md")
         if not in_scope:
             continue
         text = strip_code_fences(source.read_text(encoding="utf-8"))
