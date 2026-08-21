@@ -3,8 +3,8 @@
 FuguTTX is TTX 1: a small language model and agent for OpenBSD system administration.
 TTX 1 is a fine-tune of Qwen3-4B. It runs on the CPU, on OpenBSD, in 16 GB of RAM or
 less, through llama.cpp.
-The `ttx` harness — Perl 5, base modules plus `Fugu::REPL` — operates the model in the
-boundaries of pledge, unveil, doas rules, and dry-run gates.
+The `ttx` harness — Perl 5, base modules plus the Fugu module allow-list of D7 —
+operates the model in the boundaries of pledge, unveil, doas rules, and dry-run gates.
 
 ## Tasks and dependencies
 
@@ -12,7 +12,8 @@ boundaries of pledge, unveil, doas rules, and dry-run gates.
 `make help` lists the targets.
 
 - Run `make setup` once, to install the development tools into `.venv`.
-- Run `make deps` once, to install the Scaleway CLI (`scw`) into `~/.local/bin`.
+- Run `make deps` once.
+  It installs the Fugu distribution and the Scaleway CLI.
 - Run `make check` before each commit.
 
 ## The specification is a living document

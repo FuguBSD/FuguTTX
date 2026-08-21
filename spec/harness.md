@@ -22,6 +22,10 @@ The model can reach `doas` only through the fixed protocol of the executor.
 The operator account holds no doas rules, and it cannot run the privileged commands
 directly.
 
+The `ttx` command line comes from `Fugu::CLI`: the subcommand dispatch, the option
+parsing, the help text, and the shared exit codes 0, 1, 2, 3 and 7. An exit code that
+belongs to FuguTTX starts above those.
+
 <a id="hrn-lang"></a>
 
 ## Language constraint
@@ -33,18 +37,22 @@ unprivileged side of doas, C on the privileged side.
 The C never faces the model.
 The Perl never runs as root.
 
-The Perl harness uses the modules from base: `OpenBSD::Pledge(3p)` and
-`OpenBSD::Unveil(3p)` for the sandbox, `HTTP::Tiny` for the local llama-server API,
-`JSON::PP` for tool-call parsing, `Digest::SHA` for the confirmation digest,
-`Sys::Syslog` for the audit duplicate, and `Socket` for the control socket.
-One module comes from outside base: the client reads operator input through the
-`Fugu::REPL` module of the installed Fugu distribution ([HRN-REPL](#hrn-repl)). The
-module comes from the sibling Fugu repository, and it loads with base modules only.
+The Perl harness uses the modules from base: `HTTP::Tiny` for the local llama-server
+API, `JSON::PP` for tool-call parsing, `Digest::SHA` for the confirmation digest, and
+`Socket` for the control socket.
+Three more base modules arrive through a Fugu module.
+`Fugu::Sandbox` calls `OpenBSD::Pledge(3p)` and `OpenBSD::Unveil(3p)` for the sandbox
+([HRN-SAFE-PLEDGE](#hrn-safe-pledge)). `Fugu::Log` calls `Sys::Syslog` for the audit
+duplicate ([HRN-SAFE-AUDIT](#hrn-safe-audit)). The modules of the allow-list come from
+outside base, and [D7](decisions.md#d7) holds that list.
+Each one comes from the installed Fugu distribution, and each one loads with base
+modules only. The client reads operator input through `Fugu::REPL`
+([HRN-REPL](#hrn-repl)).
 
 **No CPAN install on the target is a hard constraint.
-A CI check enforces the import rule: base modules plus `Fugu::REPL`, and no other
-([D7](decisions.md#d7)).** The OpenBSD package tools are Perl, written against base
-alone. The harness follows the same discipline in its own code.
+A CI check enforces the import rule: a base module, or a module of the allow-list, and
+no other ([D7](decisions.md#d7)).** The OpenBSD package tools are Perl, written against
+base alone. The harness follows the same discipline in its own code.
 The C wrappers compile with the base toolchain, so they add no port dependency.
 Two port dependencies exist: llama.cpp and p5-Fugu.
 
@@ -55,9 +63,9 @@ A framing defect in the harness code raises an exception.
 It does not corrupt the heap.
 
 The Fugu distribution holds `Protocol::Imsg`, a core-Perl imsg(3) frame codec.
-The import rule of [D7](decisions.md#d7) excludes it, so the harness carries its own
-frame code. The codec reports a framing failure through `$!` and a return value, and not
-through an exception.
+That codec is outside the allow-list of [D7](decisions.md#d7), so the harness carries
+its own frame code. The codec reports a framing failure through `$!` and a return value,
+and not through an exception.
 
 <a id="hrn-perl"></a>
 
@@ -70,10 +78,13 @@ These rules are normative, and the CI check enforces them:
 - Use the list form of `system` and `exec`. Do not use the single-string form.
 - Use three-argument `open`. Do not use two-argument `open`, and do not use backticks.
 - Run every program under taint mode (`perl -T`).
-- Reduce `%ENV` to a fixed safe set before any `exec`.
+- Reduce `%ENV` to a fixed safe set before any `exec`. The fixed set comes from the
+  `env` argument of `Fugu::Process`. That argument must exist in the installed
+  distribution, and the minimum version of [HRN-PKG](#hrn-pkg) covers it.
 - Load and exercise every module before the process pledges.
   A lazy `require` after `pledge(2)` needs `rpath`. Its absence kills the process with
-  `SIGABRT`.
+  `SIGABRT`. Each module of the allow-list loads at compile time, before the pledge
+  call, so no lazy `require` runs after it.
 
 <a id="hrn-arch"></a>
 
@@ -123,7 +134,7 @@ must not hold `exec`**. Model output is untrusted input.
 
 | Process | Role | pledge, after setup | unveil |
 | --- | --- | --- | --- |
-| Parent (engine) | Policy, tool execution, audit | `stdio rpath wpath cpath proc exec` | the diagnostic binaries (x), the doas wrappers (x), `/usr/bin/doas` (x), `/usr/bin/diff` (x), the candidate directory (rwc), the `ttxd` binary (x), `/var/log/ttx` (rwc), `/etc` (r), `/usr/share/man` (r) |
+| Parent (engine) | Policy, tool execution, audit | `stdio rpath wpath cpath proc exec` | the diagnostic binaries (x), the doas wrappers (x), `/usr/bin/doas` (x), `/usr/bin/diff` (x), the candidate directory (rwc), the `ttxd` binary (x), `/var/log/ttx` (rwc), `/etc` (r), `/usr/share/man` (r), the perl library directories (r), `/dev/urandom` (r) |
 | Model process | HTTP to llama-server, JSON parsing | `stdio` | nothing |
 | Frontend process | Control socket, session, confirmations | `stdio unix` | the socket path |
 
@@ -133,6 +144,13 @@ must not hold `exec`**. Model output is untrusted input.
   defines. The unveil row is a complete enumeration: it names each diagnostic binary the
   parent can run without doas, the doas wrappers, `diff(1)`, the candidate directory it
   writes, the log directory, and the `ttxd` binary it re-executes to respawn a child.
+  The enumeration takes the perl library directories from
+  `Fugu::Sandbox->perl_lib_dirs`. It takes the read-only system inventory from
+  `Fugu::Sandbox->system_paths`, and `/etc` already covers each entry of that inventory
+  except `/dev/urandom`. The parent execs its own program to start each child, so each
+  child needs the library directories of the perl that runs.
+  The paths of the harness itself stay in the harness: the diagnostic binaries, the doas
+  wrappers, the candidate directory and the log directory.
   The parent builds each diff of [HRN-TOOL-GATE-1](#hrn-tool-gate) with base `diff(1)`,
   so the enumeration holds that binary.
   The candidate directory is not `/etc`, because `/etc` is read-only to the parent.
@@ -259,11 +277,13 @@ These rules define it:
 - **HRN-CONFIRM-8.** When a session disconnects, its pending mutations die.
 - **HRN-CONFIRM-9.** The parent holds the candidate content in memory.
   Before it installs the file, it verifies the content against the digest.
-  It writes the held bytes to a temporary file, and it then renames the file into place.
+  It installs the file with `Fugu::File->write_atomic`, which writes a temporary sibling
+  and renames it over the target.
   The rename is atomic, so a crash cannot leave a truncated target.
-- **HRN-CONFIRM-10.** The candidate directory has mode 0700 and owner `_ttx`. Only the
-  parent holds an unveil of the candidate directory, so no other process can rewrite a
-  candidate between the confirmation and the install.
+- **HRN-CONFIRM-10.** The candidate directory has mode 0700 and owner `_ttx`. The parent
+  checks the directory with `Fugu::File->ensure_dir`, which refuses a symlink.
+  Only the parent holds an unveil of the candidate directory, so no other process can
+  rewrite a candidate between the confirmation and the install.
 
 The digest binds the confirmation to what the system will do, not only to what the
 operator saw.
@@ -293,6 +313,12 @@ Each tool is a function with a JSON schema.
   The argument set is finite, so an exact rule is safe here.
   This rule depends on the system users ([HRN-ARCH](#hrn-arch)).
 
+The parent runs each tool with `Fugu::Process`. The module never runs a shell: the
+command is a list, so no argument can become a shell operator.
+The list form of [HRN-PERL](#hrn-perl) therefore holds for each tool.
+`run` gives the captured output, the exit code and the timeout of the call.
+`exit_code` decodes the raw wait status.
+
 <a id="hrn-tool-gate"></a>**Gated mutations — dry run first, always:**
 
 - **HRN-TOOL-GATE-1.** Configuration edits: write a candidate file, show the diff, and
@@ -308,6 +334,9 @@ Each tool is a function with a JSON schema.
   the previous file content, the previous sysctl value, or the previous service state.
   The rollback record enters the session transcript.
   This rule depends on the session transcript ([HRN-TRANSCRIPT](#hrn-transcript)).
+
+The parent runs each dry run and each real call with `Fugu::Process`
+([HRN-TOOL-RO](#hrn-tool-ro)).
 
 <a id="hrn-pf-commit"></a>**The pf commit-confirm rule.** A bad ruleset can cut the
 connection that carries the confirmation, and `pfctl` has no built-in revert.
@@ -382,9 +411,13 @@ Five rules control the loop:
 
 The operator can cancel a step through the client at any time.
 On a cancel, the parent must not start a new model call.
-The parent kills the process group of a running tool.
-The parent appends a synthesized error result for each unanswered tool call.
+The parent starts each tool in its own session, so the tool leads a process group.
+It kills that group with `Fugu::Process->terminate`, in the process-group form: a
+`SIGTERM`, a grace period, then a `SIGKILL`. The parent appends a synthesized error
+result for each unanswered tool call.
 Thus no tool call in the transcript lacks a result.
+The process-group form must exist in the installed distribution, and the minimum version
+of [HRN-PKG](#hrn-pkg) covers it.
 This specification does not fix the abort mechanism for an in-flight model generation.
 
 <a id="hrn-live"></a>
@@ -464,8 +497,14 @@ A skill is a stored procedure for one task, in the published `SKILL.md` conventi
   then a markdown body.
   The `name` field must match the directory name: lowercase `[a-z0-9-]`, at most 64
   characters. The `description` field is required, at most 1,024 characters.
+  `Fugu::File->valid_name` refuses a name that is not one safe path component, and
+  `Fugu::File->read` reads the file.
+  The harness checks the character set and the length itself, because the rule above is
+  narrower than one path component.
   A base-Perl line parser reads the `key: value` frontmatter.
   No YAML module is necessary.
+  The parser stays in the harness, because the `key: value` frontmatter is not the
+  OpenBSD configuration grammar of `Fugu::Config`.
 - The system prompt lists only the name and the description of each skill.
 - The trigger is deterministic.
   The operator invokes a skill by name, or the harness matches an optional frontmatter
@@ -631,6 +670,11 @@ Safety is first-class, not optional.
 - <a id="hrn-safe-pledge"></a>**pledge/unveil, per process.** Each process pledges only
   the promises of its role, and unveils only its own paths.
   The process table of [HRN-PROC](#hrn-proc) is normative.
+  The harness reaches `pledge(2)` and `unveil(2)` through `Fugu::Sandbox`, a module of
+  the allow-list ([D7](decisions.md#d7)). The module is real on OpenBSD, and it is a
+  successful no-op off OpenBSD. A test can therefore prove each promise set and each
+  unveil list on any host.
+  `Fugu::Sandbox->is_supported` tells enforcement from emulation.
   No post-setup pledge holds `inet`. The model process uses `inet` only during setup, to
   open its one connection, and it then drops to `stdio`. `proc exec` exists only in the
   parent. A study of these mitigations across 19 OpenBSD releases shows they are
@@ -673,10 +717,11 @@ Safety is first-class, not optional.
   [session transcript](#session-transcript)). The parent appends each prompt, tool call,
   executed command, exit status, and confirmation to the transcript of the session.
   Each confirmation record holds the peer user id and the digest.
-  The parent also writes each record to `syslog(3)`. `sendsyslog(2)` is in the `stdio`
-  promise, so this needs no wider pledge.
-  The harness pins the native log method (`setlogsock('native')`), so `Sys::Syslog` does
-  not need the `unix` promise.
+  The parent also writes each record to `syslog(3)` through `Fugu::Log`, in syslog mode.
+  `sendsyslog(2)` is in the `stdio` promise, so this needs no wider pledge.
+  The module pins the native log method (`setlogsock('native')`), so the process needs
+  no `unix` promise. That pin must exist in the installed distribution, and the minimum
+  version of [HRN-PKG](#hrn-pkg) covers it.
   A record that reaches `syslogd(8)` sits in a different privilege domain, and `syslogd`
   can forward it to a remote host.
   A compromised `_ttx` parent can still forge a future record, and it can stop logging,
@@ -722,6 +767,8 @@ Safety is first-class, not optional.
 
 ## Model fetch
 
+`ttx fetch` is one subcommand of the command line of [HRN-SPLIT](#hrn-split), and it
+holds its own pledge set.
 `ttx fetch` downloads GGUF artifacts with base `ftp(1)`, which speaks HTTPS. It
 validates the `signify(1)` signature against the pinned FuguTTX public key before the
 model loads. No TLS library dependency enters the harness.
@@ -742,10 +789,10 @@ and to other users. `ttx fetch` re-checks the signature at load time.
 The harness ships as an OpenBSD port, `sysutils/ttx`. The port skeleton lives in the
 repository.
 The port lists llama.cpp and p5-Fugu as run dependencies, with a minimum Fugu
-version ([HRN-REPL](#hrn-repl)). The port installs `ttxd`, `ttx`, and the doas target
-wrappers under `/usr/local/libexec/ttx`. It creates the `_ttx` user, the `_ttxllm` user,
-and the `ttxop` group.
-It creates the log directory `/var/log/ttx` (owner `_ttx`, mode 0700) and the
-configuration directory `/etc/ttx`. It includes two `rc.d` scripts: one runs
+version. That version covers each module of the allow-list ([D7](decisions.md#d7)). The
+port installs `ttxd`, `ttx`, and the doas target wrappers under
+`/usr/local/libexec/ttx`. It creates the `_ttx` user, the `_ttxllm` user, and the
+`ttxop` group. It creates the log directory `/var/log/ttx` (owner `_ttx`, mode 0700) and
+the configuration directory `/etc/ttx`. It includes two `rc.d` scripts: one runs
 `llama-server` with the TTX model, and one runs `ttxd`. Weights do not ship in the
 package. `ttx fetch` downloads the models separately.

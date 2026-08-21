@@ -16,7 +16,7 @@ The boundary is where the code runs.
 | Model-side work (data, synthesis, training, evaluation, quantization) | Python 3.12, uv workspace, one lockfile | The ML ecosystem is Python. uv gives one lockfile and per-package installation, with no environment drift. |
 | Training framework | Axolotl (QLoRA), YAML configurations in git | One framework covers CPT and SFT. Version-controlled YAML makes each run reproducible. |
 | GPU runtime | Upstream Docker images (Axolotl for training, vLLM for the teacher) on the Scaleway GPU OS image | No custom environments on ephemeral instances. The uv workspace runs on the operator machine and in CI, not on the GPU. |
-| Harness body | Perl 5 from OpenBSD base, base modules plus `Fugu::REPL` from the p5-Fugu package | Perl, `OpenBSD::Pledge(3p)`, and `OpenBSD::Unveil(3p)` ship in base. The OpenBSD package tools follow the same discipline. The Fugu library supplies the shared REPL module ([harness](harness.md#hrn-repl)). |
+| Harness body | Perl 5 from OpenBSD base, base modules plus the Fugu module allow-list of [D7](decisions.md#d7), from the p5-Fugu package | Perl, `OpenBSD::Pledge(3p)`, and `OpenBSD::Unveil(3p)` ship in base. The OpenBSD package tools follow the same discipline. The Fugu library supplies the shared modules: the line editor, the sandbox, the logger, the process control, the configuration grammar, the file operations, and the command line. |
 | doas target wrappers | C, against libc alone | The privileged side of doas. A small C wrapper avoids the interpreter startup surface under doas, and libc gives `pledge(2)`, `unveil(2)`, and `execv(3)`. See [D7](decisions.md) and [harness](harness.md). |
 | OpenBSD guests | The `fuguvm` tool, over qemu | One tool installs and operates each guest, so the FuguBSD projects share one guest lifecycle. |
 | Infrastructure as code | OpenTofu, with the Scaleway provider | Open-source IaC agrees with the project license ethos. It makes the ephemeral GPU lifecycle safe and repeatable. |
@@ -107,15 +107,16 @@ Validation, on each push, with no cloud credentials:
   (`make spec-check`). The check verifies each internal link and each anchor, and it
   verifies that `spec/index.md` lists each specification document.
   A reference between the specification and the code must not rot silently.
-- Harness body: `perl -c`, `prove`, taint mode, the dependency check (base-module
-  imports plus `Fugu::REPL`, and no other), and the execution-discipline check
-  (list-form exec, three-argument open, no backticks).
+- Harness body: `perl -c`, `prove`, taint mode, the dependency check, and the
+  execution-discipline check (list-form exec, three-argument open, no backticks).
+  The dependency check permits a base-module import and a module of the allow-list of
+  [D7](decisions.md#d7), and it refuses each other module.
+  D7 alone holds the list.
   CI installs the Fugu distribution through `scripts/deps`, so `prove` runs with the
-  real module ([harness](harness.md#hrn-repl)). A Linux runner has no `OpenBSD::Pledge`
-  and no `OpenBSD::Unveil`. No-op shims under `harness/t/lib/` stand in for both
-  modules, so `perl -c` and `prove` run on any runner.
-  The shims live in the test tree only, and they never ship.
-  Pledge and unveil behavior is verified on OpenBSD guests, on the development host.
+  real modules ([harness](harness.md#hrn-repl)). The harness reaches pledge(2) and
+  unveil(2) through `Fugu::Sandbox`, which restricts nothing off OpenBSD and returns
+  success, so `perl -c` and `prove` run on any runner.
+  The OpenBSD guests of the development host verify the enforcement.
 - doas wrappers: compile with the base toolchain, and `lint`.
 - Infrastructure: `tofu fmt -check` and `tofu validate`.
 - Training: Axolotl configuration validation.
