@@ -36,8 +36,8 @@ When you make a plan:
    They give the requirements for the plan.
 4. Cite each requirement by its unit ID, for example `HRN-CONFIRM`. A plan lists the
    units that it implements, the units that it implements in part, and the units that it
-   defers. A plan lives in `docs/plans/`. The [implementation register](STATUS.md) lists
-   each unit and its state.
+   defers. A plan lives in `plans/`. The [implementation register](STATUS.md) lists each
+   unit and its state.
 5. When your change implements a unit, or a part of a unit, set the state of the unit in
    the [implementation register](STATUS.md) in the same change.
 

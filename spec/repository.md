@@ -65,8 +65,8 @@ fuguttx/
 ├── infra/                       # OpenTofu for Scaleway (modules/, persistent/, dev/, train/, image/)
 ├── datasets/                    # dataset cards + manifests (not raw data)
 ├── models/                      # model cards + release manifests (GGUF via object storage/HF)
+├── plans/                       # implementation plans, with unit citations
 ├── docs/                        # corpus/licensing notes, runbooks, research notes
-│   ├── plans/                   #   implementation plans, with unit citations
 │   ├── runbooks/                #   bootstrap, training campaign, release
 │   └── research/                #   dated research notes with sources
 ├── deps/                        # per-OS dependency manifests (deps/<OS>.txt)
