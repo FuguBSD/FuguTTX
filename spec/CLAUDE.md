@@ -41,7 +41,7 @@ An invisible HTML anchor marks each unit, and the unit ID is the anchor in upper
 ## STATUS.md, the implementation register
 
 [STATUS.md](STATUS.md) is the only home of implementation state: one row per unit, with
-a state (`open`, `partial`, `done`, `n-a`), a “Done by” phase, and a note.
+a state (`open`, `partial`, `done`, `n-a`) and a note.
 When your change implements a unit, or a part of a unit, set the state of the unit in
 the register in the same change.
 A `partial` note names each absent part.
@@ -50,6 +50,6 @@ A `done` note links the code or the tests.
 ## Checks
 
 `make spec-check` runs `scripts/spec_check.py`. It validates the links, the anchors, the
-register, the rule definitions, the citations, and the phase lint.
+register, the rule definitions, the citations, and the schedule lint.
 On a pull request, CI adds a drift gate: a change to a document with a `partial` or
 `done` unit must also change STATUS.md or a mapped code root.

@@ -10,7 +10,8 @@ help:
 setup:
 	uv sync
 
-# Install the external dependencies from deps/<OS>.txt, into ~/.local/bin.
+# Install the external dependencies from deps/<OS>.txt: the Fugu distribution
+# with cpanm, and the Scaleway CLI into ~/.local/bin.
 deps:
 	scripts/deps runtime
 

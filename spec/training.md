@@ -91,14 +91,20 @@ Traces target 8K tokens or less, to match the inference context budget.
 **The teacher proposes, and a rollout executes.** The rollout driver runs on the
 development host.
 It rolls each trace out against a disposable OpenBSD guest, through the
-harness slice ([roadmap](roadmap.md)), with a snapshot restore between traces.
-Each tool result in a trace is the real output of the guest.
+agent loop of the harness ([harness](harness.md#hrn-loop)), with a snapshot restore
+between traces. Each tool result in a trace is the real output of the guest.
 A teacher-written observation must not enter a trace.
 A trace with a fabricated observation teaches the model to expect fabricated systems.
 The driver reaches the teacher over an SSH tunnel to the train instance, and the vLLM
 endpoint binds to localhost on that instance.
 A trace enters the training set only when both checks pass: the scenario check passes in
 the guest, and the judge filter accepts the trace.
+
+The driver operates the guest with the `fuguvm` command.
+It copies the harness slice and the scenarios into the guest, and it copies each
+transcript out. It runs each step with `fuguvm ssh`, and it reads the returned exit code
+as the result. `fuguvm snapshot restore` returns the guest to the base snapshot between
+two traces.
 
 The harness format and the training format must not drift.
 The system prompt, the tool schemas, the error templates, and the re-prompt texts are
@@ -145,7 +151,7 @@ Continuous operation adds recurring items, per month:
 | Item | Cost per month |
 | --- | --- |
 | Development host (Elastic Metal, `infra/dev`) | approximately €200–450 |
-| GPU campaigns, in an active phase | approximately €300–800 |
+| GPU campaigns, in a campaign month | approximately €300–800 |
 | Object Storage, flexible IPs, and other items | below €50 |
 
 Each promoted variant adds approximately €50–150 of GPU time.

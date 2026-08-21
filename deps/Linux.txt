@@ -1,3 +1,5 @@
 # External dependencies of FuguTTX. scripts/deps installs each line.
+# The Fugu distribution supplies the harness modules of the allow-list (D7).
+runtime dist https://github.com/FuguBSD/Fugu/releases/latest/download/Fugu.tar.gz
 # The Scaleway CLI operates the infrastructure (spec/infrastructure.md).
 runtime bin scw https://github.com/scaleway/scaleway-cli/releases/download/v2.61.0/scaleway-cli_2.61.0_{os}_{arch}

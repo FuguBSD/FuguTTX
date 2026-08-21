@@ -126,6 +126,13 @@ GiB, was EUR 279.97 per month, read 2026-06-23, against EUR 400.04. If both chec
 the virtual instance becomes the development host.
 Record the result in the bootstrap runbook.
 
+- **IAC-METAL-1.** The KVM test of this unit uses the `fuguvm` tool: `fuguvm up`, then
+  `fuguvm ssh "uname -m"`, then `fuguvm down`. The quotes are necessary, because the
+  option parser of the tool reads a bare `-m` as an unknown option.
+  The test passes when the command prints `amd64` and returns exit code 0, and when the
+  tool reports the `kvm` accelerator.
+  The bootstrap runbook records the reported accelerator.
+
 Native CPU speed on this host is a convenience, not a requirement.
 A published performance number comes only from the target hardware
 ([evaluation](evaluation.md)). Do not select an offer on a performance argument.
@@ -277,6 +284,21 @@ The host must pin an exact qemu version.
 A qemu upgrade must not reach the host without the guest-boot test above.
 The host holds no durable state.
 
+- **IAC-DEV-1.** The host declares one guest for each parallel scenario, in one
+  `.fuguvmrc` of the `fuguvm` tool.
+  Each guest carries its own name, and each guest takes its host ports automatically.
+  The guests share one read-only image cache.
+- **IAC-DEV-2.** Each forwarded guest port must bind to `127.0.0.1`. The host holds a
+  public IPv4 address, so a guest port must not listen on a public interface.
+- **IAC-DEV-3.** The guest architecture of the suite is amd64, and the `fuguvm` tool
+  must select the KVM accelerator on this host.
+  A guest that falls back to software emulation fails the target.
+- **IAC-DEV-4.** The `.fuguvmrc` of this host names the pinned qemu version, and the
+  tool must refuse a guest under an other version, with exit code 3. The directive is
+  optional, and a guest with no directive runs no check.
+  The image build of [IAC-IMAGE](#iac-image) runs on a CI runner with an other qemu
+  version, so its guest carries no version directive.
+
 The host is the largest recurring cost line of the project, so idle time is waste.
 Two lifecycle rules bound it:
 
@@ -361,6 +383,15 @@ The stack publishes the OpenBSD guest image that the agentic suite needs.
 `make image-publish` uploads the file to the artifacts bucket.
 Apply the stack when the OpenBSD release changes.
 Keep the previous image in the artifacts bucket.
+
+- **IAC-IMAGE-1.** The `fuguvm` tool drives the `autoinstall(8)` install of
+  `make image-build`, and it exports the installed disk as the qcow2 file.
+  The `autoinstall(8)` response file lives in the stack directory.
+  The build records the digest of the response file with the image, so a rebuild is
+  reproducible.
+- **IAC-IMAGE-2.** The tool must accept an existing qcow2 file as the base disk of a
+  guest. The suite then installs nothing per host.
+  A raw export serves the Elastic Metal route of [IAC-HOSTS](#iac-hosts).
 
 <a id="iac-hosts"></a>
 
