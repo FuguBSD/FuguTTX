@@ -1,6 +1,9 @@
 # FuguTTX task targets. Run `make check` before each commit.
 
-.PHONY: help setup deps fmt spec-check check
+# Pin the version so that local runs and CI agree on formatting
+PRETTIER = npx prettier@3.9.6
+
+.PHONY: help setup deps fmt check prettier prettier-fix spec-check ste-lint test
 
 # List the targets.
 help:
@@ -15,20 +18,34 @@ setup:
 deps:
 	scripts/deps runtime
 
-# Format the Python code and the Markdown documents.
+# Format the Python code.
 fmt:
 	uv run ruff format .
 	uv run ruff check --fix .
-	uv run flowmark --auto .
 
-# Verify the internal links, the anchors, and the index coverage of the documents.
+# Validate the specification and the plans.
 spec-check:
-	uv run python scripts/spec_check.py
+	@scripts/spec-check
 
-# Verify the lockfile, the formats, and the lints. CI runs the same gate.
+# Check the prose against the writing standard.
+ste-lint:
+	@scripts/ste-lint
+
+# Run the workflow tests.
+test:
+	prove -l t/ci/*.t
+
+# Verify the lockfile, the formats, the lints, and the documents. CI runs the same gate.
 check:
 	uv lock --check
 	uv run ruff format --check .
 	uv run ruff check .
-	uv run flowmark --check --semantic --cleanups --smartquotes --ellipses .
-	$(MAKE) spec-check
+	$(MAKE) spec-check ste-lint test
+
+# Check the Markdown, JSON and YAML formatting.
+prettier:
+	@$(PRETTIER) --check --no-error-on-unmatched-pattern '**/*.md' '**/*.json' '**/*.yml' || { echo "Run 'make prettier-fix' to fix formatting"; exit 1; }
+
+# Format the Markdown, JSON and YAML files.
+prettier-fix:
+	$(PRETTIER) --write --no-error-on-unmatched-pattern '**/*.md' '**/*.json' '**/*.yml'

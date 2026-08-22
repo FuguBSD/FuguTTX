@@ -10,7 +10,6 @@ package = false
 [dependency-groups]
 dev = [
     "ruff>=0.12",
-    "flowmark>=0.5",
 ]
 
 [tool.ruff]
