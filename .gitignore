@@ -10,3 +10,7 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Scratch space of the development rules.
+explore/
+SCRATCHPAD-*.md
