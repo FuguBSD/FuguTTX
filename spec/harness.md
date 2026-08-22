@@ -206,39 +206,39 @@ sibling Fugu repository, supplies the line editor. FuguPass builds its interface
 on the same module, so the interactive behavior stays uniform across the FuguBSD
 tools.
 
-- **HRN-REPL-1.** The client reads operator input through the `Fugu::REPL`
+- **HRN-REPL-1** — The client reads operator input through the `Fugu::REPL`
   module of the installed Fugu distribution. On the target, the port installs
   the p5-Fugu package as a run dependency, with a minimum version
   ([HRN-PKG](#hrn-pkg)). The client loads the module before it pledges.
-- **HRN-REPL-2.** The module must load with base modules only, and it must stand
-  alone: it must not load an other Fugu module. It must operate inside the
+- **HRN-REPL-2** — The module must load with base modules only, and it must
+  stand alone: it must not load an other Fugu module. It must operate inside the
   `stdio tty` promises of the client pledge: no file access, no process
   creation, and no network access of its own.
-- **HRN-REPL-3.** An input line that starts with `/` is a client command from a
+- **HRN-REPL-3** — An input line that starts with `/` is a client command from a
   fixed command table. Every other line is a step prompt for the daemon. The
   module generates `/help` from the table, and `/quit` ends the session.
-- **HRN-REPL-4.** History lives in memory, for the session only. The client must
-  not write a history file.
-- **HRN-REPL-5.** While a step runs, the client waits on the control socket and
+- **HRN-REPL-4** — History lives in memory, for the session only. The client
+  must not write a history file.
+- **HRN-REPL-5** — While a step runs, the client waits on the control socket and
   shows the liveness events ([HRN-LIVE](#hrn-live)). An operator interrupt
   during a step sends a cancel ([HRN-CANCEL](#hrn-cancel)). An interrupt at the
   prompt only clears the line.
-- **HRN-REPL-6.** A confirmation is an explicit yes/no prompt of the module,
+- **HRN-REPL-6** — A confirmation is an explicit yes/no prompt of the module,
   with the default no. An end of file or an interrupt answers no. On a yes, the
   client builds the confirmation message of [HRN-CONFIRM](#hrn-confirm).
-- **HRN-REPL-7.** Every byte from the daemon passes the display filter of the
+- **HRN-REPL-7** — Every byte from the daemon passes the display filter of the
   module before display. The filter applies the rules of
   [HRN-SAFE-DISPLAY](#hrn-safe-display).
-- **HRN-REPL-8.** At the prompt, the module must watch the control socket as a
+- **HRN-REPL-8** — At the prompt, the module must watch the control socket as a
   registered handle. A daemon disconnect ends the prompt read, and the client
   reports the disconnect and exits.
-- **HRN-REPL-9.** When standard input is not a terminal, the module must read
+- **HRN-REPL-9** — When standard input is not a terminal, the module must read
   plain lines, with no line editing and no escape output. The test suites drive
   the client in this mode.
-- **HRN-REPL-10.** The module must not read a terminfo file. It must use a fixed
-  escape-sequence set, because the client pledge gives no file access.
-- **HRN-REPL-11.** The interface contract of the module is the `.pod` sidecar of
-  the module in the Fugu repository. FuguPass CLI-IFACE and CLI-REPL cite the
+- **HRN-REPL-10** — The module must not read a terminfo file. It must use a
+  fixed escape-sequence set, because the client pledge gives no file access.
+- **HRN-REPL-11** — The interface contract of the module is the `.pod` sidecar
+  of the module in the Fugu repository. FuguPass CLI-IFACE and CLI-REPL cite the
   same contract, so a change to it coordinates with FuguPass through Fugu.
 
 The module holds the terminal in raw mode only while it reads a line. It
@@ -252,29 +252,29 @@ interface, with tab completion from a callback.
 
 The dry-run gate is a protocol, not a prompt. These rules define it:
 
-- **HRN-CONFIRM-1.** The parent gives each pending mutation an action
+- **HRN-CONFIRM-1** — The parent gives each pending mutation an action
   identifier.
-- **HRN-CONFIRM-2.** The parent computes a SHA-256 digest with `Digest::SHA`.
+- **HRN-CONFIRM-2** — The parent computes a SHA-256 digest with `Digest::SHA`.
   The digest covers the action identifier, the exact argument vector, the
   candidate file content, and the dry-run output.
-- **HRN-CONFIRM-3.** The client shows the dry-run output and the diff to the
+- **HRN-CONFIRM-3** — The client shows the dry-run output and the diff to the
   operator.
-- **HRN-CONFIRM-4.** A confirmation message must carry the action identifier and
-  the digest.
-- **HRN-CONFIRM-5.** A confirmation with a stale identifier or a wrong digest
+- **HRN-CONFIRM-4** — A confirmation message must carry the action identifier
+  and the digest.
+- **HRN-CONFIRM-5** — A confirmation with a stale identifier or a wrong digest
   fails closed.
-- **HRN-CONFIRM-6.** A confirmation must come from the same peer user id that
+- **HRN-CONFIRM-6** — A confirmation must come from the same peer user id that
   saw the dry run. This rule depends on the control socket
   ([HRN-SOCKET](#hrn-socket)).
-- **HRN-CONFIRM-7.** A pending mutation has a timeout. After the timeout, it
+- **HRN-CONFIRM-7** — A pending mutation has a timeout. After the timeout, it
   fails closed.
-- **HRN-CONFIRM-8.** When a session disconnects, its pending mutations die.
-- **HRN-CONFIRM-9.** The parent holds the candidate content in memory. Before it
-  installs the file, it verifies the content against the digest. It installs the
-  file with `Fugu::File->write_atomic`, which writes a temporary sibling and
+- **HRN-CONFIRM-8** — When a session disconnects, its pending mutations die.
+- **HRN-CONFIRM-9** — The parent holds the candidate content in memory. Before
+  it installs the file, it verifies the content against the digest. It installs
+  the file with `Fugu::File->write_atomic`, which writes a temporary sibling and
   renames it over the target. The rename is atomic, so a crash cannot leave a
   truncated target.
-- **HRN-CONFIRM-10.** The candidate directory has mode 0700 and owner `_ttx`.
+- **HRN-CONFIRM-10** — The candidate directory has mode 0700 and owner `_ttx`.
   The parent checks the directory with `Fugu::File->ensure_dir`, which refuses a
   symlink. Only the parent holds an unveil of the candidate directory, so no
   other process can rewrite a candidate between the confirmation and the
@@ -292,14 +292,14 @@ Each tool is a function with a JSON schema.
 
 <a id="hrn-tool-ro"></a>**Read-only tools:**
 
-- **HRN-TOOL-RO-1.** Read configuration files under unveiled paths:
+- **HRN-TOOL-RO-1** — Read configuration files under unveiled paths:
   `/etc/pf.conf`, `/etc/sysctl.conf`, `/etc/rc.conf.local`.
-- **HRN-TOOL-RO-2.** Run diagnostics: `pfctl -s rules|states|info`, `ifconfig`,
+- **HRN-TOOL-RO-2** — Run diagnostics: `pfctl -s rules|states|info`, `ifconfig`,
   `netstat`, `sysctl` (read), `pkg_info`, `rcctl get|check`, `dmesg`.
-- **HRN-TOOL-RO-3.** Render one man page, by section and name: `man -T ascii`.
+- **HRN-TOOL-RO-3** — Render one man page, by section and name: `man -T ascii`.
   The arguments validate against a strict name pattern. The retrieval rows of
   the [baseline grid](evaluation.md#baselines-and-ablations) use this tool.
-- **HRN-TOOL-RO-4.** The parent runs most read-only tools directly as `_ttx`,
+- **HRN-TOOL-RO-4** — The parent runs most read-only tools directly as `_ttx`,
   with no doas. `pfctl` is the exception. `pfctl -s` reads `/dev/pf`, which is
   mode 0600 and owner root. The `pfctl -s rules|states|info` reads therefore get
   exact-argument doas rules. The argument set is finite, so an exact rule is
@@ -313,16 +313,16 @@ wait status.
 
 <a id="hrn-tool-gate"></a>**Gated mutations — dry run first, always:**
 
-- **HRN-TOOL-GATE-1.** Configuration edits: write a candidate file, show the
+- **HRN-TOOL-GATE-1** — Configuration edits: write a candidate file, show the
   diff, and validate (`pfctl -nf pf.conf.candidate`). Install the file only
   after an explicit confirmation.
-- **HRN-TOOL-GATE-2.** `pkg_add` and `pkg_delete`: run with `-n` first. Do the
+- **HRN-TOOL-GATE-2** — `pkg_add` and `pkg_delete`: run with `-n` first. Do the
   real invocation only after a confirmation.
-- **HRN-TOOL-GATE-3.** `sysctl -w`: record the previous value. Apply only after
+- **HRN-TOOL-GATE-3** — `sysctl -w`: record the previous value. Apply only after
   a confirmation. Give a rollback option.
-- **HRN-TOOL-GATE-4.** `rcctl enable|start|restart`: apply only after a
+- **HRN-TOOL-GATE-4** — `rcctl enable|start|restart`: apply only after a
   confirmation.
-- **HRN-TOOL-GATE-5.** Each gated mutation records its rollback path before it
+- **HRN-TOOL-GATE-5** — Each gated mutation records its rollback path before it
   applies: the previous file content, the previous sysctl value, or the previous
   service state. The rollback record enters the session transcript. This rule
   depends on the session transcript ([HRN-TRANSCRIPT](#hrn-transcript)).

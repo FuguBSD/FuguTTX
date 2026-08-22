@@ -34,7 +34,7 @@ bucket ([infrastructure](infrastructure.md)). The Perl harness and the agentic
 evaluation suite operate correctly only on OpenBSD. CI reinstalls the host in
 place each month, and the host holds no durable state.
 
-- **AGT-RUNTIME-1.** The host operates each OpenBSD guest with the `fuguvm`
+- **AGT-RUNTIME-1** — The host operates each OpenBSD guest with the `fuguvm`
   tool. One `.fuguvmrc` of the repository declares each guest. The tool must run
   as a command, and the repository must not load an `App::FuguVM` module.
   [IAC-DEV](infrastructure.md#iac-dev) states the guest architecture, the
@@ -97,12 +97,12 @@ defines “done” in a form a machine can check:
   pipeline changes in minutes, without a GPU campaign.
 - Harness changes run against disposable OpenBSD qemu snapshots. A destructive
   error costs one snapshot restore.
-- **AGT-FEEDBACK-1.** `fuguvm snapshot save` records the clean guest state, and
+- **AGT-FEEDBACK-1** — `fuguvm snapshot save` records the clean guest state, and
   `fuguvm snapshot restore` returns to it after each destructive step.
   [REP-RECIPES](repository.md#rep-recipes) states how a target reads the exit
   code of the tool.
-- **AGT-FEEDBACK-2.** `fuguvm status` writes each guest fact on standard output,
-  so a `make` target and a test can read it.
+- **AGT-FEEDBACK-2** — `fuguvm status` writes each guest fact on standard
+  output, so a `make` target and a test can read it.
 
 Some outcomes have no mechanical check: licensing judgments, release quality,
 benchmark publication. For those, the runbook says so, and the work goes to a

@@ -371,7 +371,7 @@ the harness loads the list, because no Fugu test runs under `perl -T` today.
 ## Acceptance
 
 - `make check` passes in this repository: `uv lock --check`,
-  `ruff format --check`, `ruff check`, `flowmark --check` and `make spec-check`.
+  `ruff format --check`, `ruff check`, `make prettier` and `make spec-check`.
 - D7 holds the seven module names, and no other document under `spec/`
   enumerates them.
 - REP-CI, REP-TOOLS and HRN-LANG each point at D7 for the list.

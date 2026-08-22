@@ -21,12 +21,12 @@ One language per concern. The boundary is where the code runs.
 | Infrastructure as code                                                | OpenTofu, with the Scaleway provider                                                                                      | Open-source IaC agrees with the project license ethos. It makes the ephemeral GPU lifecycle safe and repeatable.                                                                                                                                                                                              |
 | Task runner                                                           | `make`                                                                                                                    | One polyglot entry point for Python, Perl, and OpenTofu. `make` needs no installation step.                                                                                                                                                                                                                   |
 | External dependencies                                                 | `deps/<OS>.txt` manifests, installed by `scripts/deps`                                                                    | The shared FuguBSD bootstrap script installs OS packages, CPAN modules, and prebuilt binaries the same way in every repository. FuguBSD/Tooling holds the canonical copy of the script.                                                                                                                       |
-| Format and lint                                                       | Ruff for Python, flowmark for Markdown                                                                                    | One formatter per language. flowmark makes semantic line breaks: one sentence per line. This agrees with the ASD-STE100 writing standard and keeps diffs small.                                                                                                                                               |
+| Format and lint                                                       | Ruff for Python, prettier for Markdown                                                                                    | One formatter per language. prettier is the Markdown formatter of every FuguBSD repository, so the synced documents format the same way everywhere.                                                                                                                                                           |
 | Inference runtime                                                     | llama.cpp everywhere                                                                                                      | The same runtime serves development (Metal on Apple Silicon) and production (OpenBSD CPU). What is validated is what ships.                                                                                                                                                                                   |
 | Teacher/judge model                                                   | Qwen3-32B teacher (Apache 2.0), served by vLLM on the H100; a release judge from a different model family                 | Clean license provenance for synthetic data. The teacher writes the corpus augmentation, and it proposes and filters traces. A judge outside the Qwen family grades each release bar ([evaluation](evaluation.md)).                                                                                           |
 | CI                                                                    | GitHub Actions                                                                                                            | The repository and the corpus mirrors are on GitHub. CI validates each push, and it operates the pipeline with the scoped pipeline credential ([infrastructure](infrastructure.md)).                                                                                                                          |
 
-- **REP-TOOLS-1.** The repository operates each OpenBSD guest with the `fuguvm`
+- **REP-TOOLS-1** — The repository operates each OpenBSD guest with the `fuguvm`
   tool, and it holds no qemu command line. A global option comes before the
   subcommand. The repository must not load an `App::FuguVM` module, because a
   sibling application is not a library.
@@ -84,7 +84,7 @@ fuguttx/
 The top-level `make check` runs each local lint, test, and validation step. It
 must pass before each commit. CI runs the same gate.
 
-- **REP-RECIPES-1.** The guest targets are `make vm-up`, `make vm-down`,
+- **REP-RECIPES-1** — The guest targets are `make vm-up`, `make vm-down`,
   `make vm-snapshot NAME=<name>`, `make vm-restore NAME=<name>` and
   `make vm-clean`. Each target runs the `fuguvm` tool. A target must act on the
   exit code. Exit code 11 reports an absent snapshot, and the target then
@@ -100,7 +100,7 @@ GitHub Actions runs two kinds of workflows.
 Validation, on each push, with no cloud credentials:
 
 - Python packages: ruff and pytest.
-- Markdown documents: `flowmark --check`, and the cross-reference check
+- Markdown documents: `make prettier`, and the cross-reference check
   (`make spec-check`). The check verifies each internal link and each anchor,
   and it verifies that `spec/index.md` lists each specification document. A
   reference between the specification and the code must not rot silently.

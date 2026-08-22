@@ -165,11 +165,11 @@ before each attempt. It discards a damaged guest with the `fuguvm destroy` verb.
 - The suite must fix a parallelism target. The target selects the Elastic Metal
   offer of the development host. The current infrastructure specification
   assumes four parallel scenarios.
-- **EVL-RUNS-1.** The suite operates each OpenBSD guest with the `fuguvm`
+- **EVL-RUNS-1** — The suite operates each OpenBSD guest with the `fuguvm`
   command. The suite must prove hardware acceleration before it grades a
   scenario, because an emulated guest is too slow.
   [IAC-DEV](infrastructure.md#iac-dev) states the guest architecture and the
   accelerator.
-- **EVL-RUNS-2.** One guest serves one scenario at a time, and the suite runs
+- **EVL-RUNS-2** — One guest serves one scenario at a time, and the suite runs
   several named guests together. [IAC-DEV](infrastructure.md#iac-dev) states the
   host ports and the shared image cache.
