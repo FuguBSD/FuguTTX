@@ -61,7 +61,8 @@ fidelity.
 A rail is an invariant. A slice must not thin a rail. These are the rails:
 
 - The license lanes (D6, [COR-LANES](corpus.md#cor-lanes)).
-- The credential scopes (D9, [IAC-CRED](infrastructure.md#iac-cred)).
+- The credential scopes (D9, the credentials of
+  [infra/CLAUDE.md](../infra/CLAUDE.md)).
 - The spend guardrails (D9, [IAC-SPEND](infrastructure.md#iac-spend)).
 - The dry-run and confirmation gates, in every loop that a model drives
   ([HRN-SAFE-DRYRUN](harness.md#hrn-safe-dryrun)).
