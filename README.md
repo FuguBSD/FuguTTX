@@ -29,9 +29,8 @@ live in `docs/research/`.
 
 ```sh
 make check       # lockfile + ruff + spec-check + ste-lint + test
-make fmt         # format the Python code
-make prettier    # Markdown formatting check
-make help        # list the targets
+make format-fix  # format the Python code
+make format-md   # Markdown formatting check
 ```
 
 ## Commit scopes
