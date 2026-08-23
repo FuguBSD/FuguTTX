@@ -37,14 +37,16 @@ confirmation digest, and `Socket` for the control socket. Three more base
 modules arrive through a Fugu module. `Fugu::Sandbox` calls
 `OpenBSD::Pledge(3p)` and `OpenBSD::Unveil(3p)` for the sandbox
 ([HRN-SAFE-PLEDGE](#hrn-safe-pledge)). `Fugu::Log` calls `Sys::Syslog` for the
-audit duplicate ([HRN-SAFE-AUDIT](#hrn-safe-audit)). The modules of the
-allow-list come from outside base, and [D7](DECISIONS.md#d7) holds that list.
-Each one comes from the installed Fugu distribution, and each one loads with
-base modules only. The client reads operator input through `Fugu::REPL`
-([HRN-REPL](#hrn-repl)).
+audit duplicate ([HRN-SAFE-AUDIT](#hrn-safe-audit)). The Fugu modules come from
+outside base, from the installed Fugu distribution, and each one loads with base
+modules only (Fugu ARC-COREPERL). The optional-feature rule of
+[D7](DECISIONS.md#d7) bounds each load. A loaded module gains no right: the
+pledge set and the unveil list of its process bound what it can do
+([HRN-SAFE-PLEDGE](#hrn-safe-pledge)). The client reads operator input through
+`Fugu::REPL` ([HRN-REPL](#hrn-repl)).
 
 **No CPAN install on the target is a hard constraint. A CI check enforces the
-import rule: a base module, or a module of the allow-list, and no other
+import rule: a base module, or a module of the Fugu distribution, and no other
 ([D7](DECISIONS.md#d7)).** The OpenBSD package tools are Perl, written against
 base alone. The harness follows the same discipline in its own code. The C
 wrappers compile with the base toolchain, so they add no port dependency. Two
@@ -56,9 +58,9 @@ length-prefixed frame in Perl is memory-safe by construction. A framing defect
 in the harness code raises an exception. It does not corrupt the heap.
 
 The Fugu distribution holds `Protocol::Imsg`, a core-Perl imsg(3) frame codec.
-That codec is outside the allow-list of [D7](DECISIONS.md#d7), so the harness
-carries its own frame code. The codec reports a framing failure through `$!` and
-a return value, and not through an exception.
+The codec reports a framing failure through `$!` and a return value, and not
+through an exception. The harness needs the exception discipline above, so it
+keeps its own frame code.
 
 <a id="hrn-perl"></a>
 
@@ -78,8 +80,8 @@ the CI check enforces them:
   it.
 - Load and exercise every module before the process pledges. A lazy `require`
   after `pledge(2)` needs `rpath`. Its absence kills the process with `SIGABRT`.
-  Each module of the allow-list loads at compile time, before the pledge call,
-  so no lazy `require` runs after it.
+  A compile-time load is not enough: some Fugu methods run a lazy `require` at
+  call time, so the harness must not reach one after the pledge call.
 
 <a id="hrn-arch"></a>
 
@@ -211,9 +213,10 @@ tools.
   the p5-Fugu package as a run dependency, with a minimum version
   ([HRN-PKG](#hrn-pkg)). The client loads the module before it pledges.
 - **HRN-REPL-2** — The module must load with base modules only, and it must
-  stand alone: it must not load an other Fugu module. It must operate inside the
-  `stdio tty` promises of the client pledge: no file access, no process
-  creation, and no network access of its own.
+  stand alone: it must not load an other Fugu module. The whole editor must fit
+  inside the client pledge, and a one-module closure keeps that proof small. It
+  must operate inside the `stdio tty` promises of the client pledge: no file
+  access, no process creation, and no network access of its own.
 - **HRN-REPL-3** — An input line that starts with `/` is a client command from a
   fixed command table. Every other line is a step prompt for the daemon. The
   module generates `/help` from the table, and `/quit` ends the session.
@@ -644,15 +647,15 @@ Safety is first-class, not optional.
 - <a id="hrn-safe-pledge"></a>**pledge/unveil, per process.** Each process
   pledges only the promises of its role, and unveils only its own paths. The
   process table of [HRN-PROC](#hrn-proc) is normative. The harness reaches
-  `pledge(2)` and `unveil(2)` through `Fugu::Sandbox`, a module of the
-  allow-list ([D7](DECISIONS.md#d7)). The module is real on OpenBSD, and it is a
-  successful no-op off OpenBSD. A test can therefore prove each promise set and
-  each unveil list on any host. `Fugu::Sandbox->is_supported` tells enforcement
-  from emulation. No post-setup pledge holds `inet`. The model process uses
-  `inet` only during setup, to open its one connection, and it then drops to
-  `stdio`. `proc exec` exists only in the parent. A study of these mitigations
-  across 19 OpenBSD releases shows they are practical (Ruohonen, Sierszecki &
-  Tiwari, arXiv:2607.03056).
+  `pledge(2)` and `unveil(2)` through `Fugu::Sandbox`, a module of the Fugu
+  distribution ([D7](DECISIONS.md#d7)). The module is real on OpenBSD, and it is
+  a successful no-op off OpenBSD. A test can therefore prove each promise set
+  and each unveil list on any host. `Fugu::Sandbox->is_supported` tells
+  enforcement from emulation. No post-setup pledge holds `inet`. The model
+  process uses `inet` only during setup, to open its one connection, and it then
+  drops to `stdio`. `proc exec` exists only in the parent. A study of these
+  mitigations across 19 OpenBSD releases shows they are practical (Ruohonen,
+  Sierszecki & Tiwari, arXiv:2607.03056).
 
 - <a id="hrn-safe-wrap"></a>**doas through fixed-function C wrappers.** A
   privileged mutation has a dynamic argument: an arbitrary package name, a
@@ -756,9 +759,9 @@ has owner `_ttx`, and its mode denies write to `_ttxllm` and to other users.
 
 The harness ships as an OpenBSD port, `sysutils/ttx`. The port skeleton lives in
 the repository. The port lists llama.cpp and p5-Fugu as run dependencies, with a
-minimum Fugu version. That version covers each module of the allow-list
-([D7](DECISIONS.md#d7)). The port installs `ttxd`, `ttx`, and the doas target
-wrappers under `/usr/local/libexec/ttx`. It creates the `_ttx` user, the
+minimum Fugu version. That version covers each Fugu module that the harness
+loads ([D7](DECISIONS.md#d7)). The port installs `ttxd`, `ttx`, and the doas
+target wrappers under `/usr/local/libexec/ttx`. It creates the `_ttx` user, the
 `_ttxllm` user, and the `ttxop` group. It creates the log directory
 `/var/log/ttx` (owner `_ttx`, mode 0700) and the configuration directory
 `/etc/ttx`. It includes two `rc.d` scripts: one runs `llama-server` with the TTX
