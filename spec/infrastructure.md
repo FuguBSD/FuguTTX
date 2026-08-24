@@ -2,101 +2,21 @@
 
 <a id="iac-code"></a>
 
-OpenTofu, with the Scaleway provider, declares each Scaleway resource. Do not
-make resources in the console. Seven exceptions exist. “Resources outside
-OpenTofu” lists them. Scaleway bills a GPU instance per minute of uptime.
-Scaleway also documents a minimum of 60 minutes for each created resource. Plan
-for the 60-minute minimum. A create/destroy cycle is therefore cheap. A cycle
-shorter than one hour saves nothing. Infrastructure as code makes `destroy`
-repeatable. It does not make `destroy` complete: read “Teardown”. The
-infrastructure code has the ISC license, like all project tooling.
+The synced instructions in [infra/CLAUDE.md](../infra/CLAUDE.md) hold the shared
+rules: naming, layout, tags, state, credentials, spend guardrails, and teardown.
+This document states what is specific to FuguTTX: the buckets, the development
+host, the training instance, the guest image, and the human prerequisites. The
+project code is `ttx`, and FuguTTX has its own Scaleway Project in the shared
+Organization.
 
-Prices change. Scaleway revised prices on 2026-06-01. Each price in this
-document carries the date it was read. The pipeline must read the live price
-before it creates a resource. Do not plan a campaign against a price in this
-document.
-
-<a id="iac-region"></a>
-
-## Region and zone
-
-One region and one zone hold everything.
-
-| Item                    | Value                         |
-| ----------------------- | ----------------------------- |
-| Region                  | `fr-par`                      |
-| Zone                    | `fr-par-2`                    |
-| Object Storage endpoint | `https://s3.fr-par.scw.cloud` |
+Do not make resources in the console. Seven exceptions exist. “Resources outside
+OpenTofu” lists them. Each price in this document carries the date it was read.
+Scaleway revised prices on 2026-06-01. Do not plan a campaign against a price in
+this document.
 
 `fr-par-2` carries `H100-1-80G`, `L40S-1-48G`, every Elastic Metal range, and
 every fallback offer of this document. Every `H100-SXM` shape is in `fr-par-2`
-only. A quota applies per Organization and per Availability Zone. One zone
-therefore caps the number of instances that a defective loop can create.
-
-Each bucket must use the region `fr-par`. Do not put a bucket in a second
-region. A quota, a price, and a data-transfer charge each depend on the region.
-
-<a id="iac-pins"></a>
-
-## Version pins
-
-| Tool              | Constraint                       |
-| ----------------- | -------------------------------- |
-| OpenTofu          | `required_version = ">= 1.11.0"` |
-| Scaleway provider | `version = "~> 2.80"`            |
-
-Each stack must hold a `versions.tf` with both constraints. Each stack must
-commit its `.terraform.lock.hcl`. OpenTofu 1.11 is the floor, because the
-credential design uses ephemeral resources and write-only arguments.
-
-The provider publishes `action` resources and list resources. OpenTofu supports
-neither. A stack must not use them.
-
-<a id="iac-layout"></a>
-
-## Layout
-
-```
-infra/
-├── modules/              # a module needs three or more callers
-├── persistent/           # buckets, IAM, budget, alerts — applied rarely
-├── dev/                  # the development host: one Elastic Metal server
-├── train/                # one GPU instance — up/down around each session
-└── image/                # the OpenBSD guest image — applied on an OpenBSD release
-```
-
-Each stack holds the same files:
-
-| File                                      | Content                                            |
-| ----------------------------------------- | -------------------------------------------------- |
-| `versions.tf`                             | The version pins above                             |
-| `backend.tf`                              | The S3 backend block, with `use_lockfile = true`   |
-| `providers.tf`                            | `provider "scaleway"`, with no credential argument |
-| `variables.tf`, `outputs.tf`, `locals.tf` | Inputs, outputs, and the tag maps                  |
-| `.terraform.lock.hcl`                     | Committed                                          |
-
-A stack is a root module. Create a module only when a pattern has three or more
-callers. A stack must not read the state of another stack with
-`terraform_remote_state`. A stack must not contain a hardcoded Scaleway UUID.
-Resolve each identifier with a data source: `scaleway_account_project`,
-`scaleway_baremetal_offer`, `scaleway_baremetal_os`, `scaleway_iam_ssh_key`,
-`scaleway_marketplace_image`, `scaleway_instance_server_type`.
-
-<a id="iac-tags"></a>
-
-## Tags
-
-The Scaleway provider has no default tags. Each stack must tag each resource it
-creates. An instance takes a list of strings. A bucket takes a map. Build both
-shapes from one map in `locals.tf`.
-
-| Tag             | Example                            | Purpose                             |
-| --------------- | ---------------------------------- | ----------------------------------- |
-| `ttx:stack`     | `ttx:stack=train`                  | Names the owning stack              |
-| `ttx:managed`   | `ttx:managed=true`                 | Marks a resource the pipeline owns  |
-| `ttx:lifecycle` | `ttx:lifecycle=ephemeral`          | The watchdog reaps `ephemeral` only |
-| `ttx:run-id`    | `ttx:run-id=8891fa2c`              | Ties a resource to one CI run       |
-| `ttx:expires`   | `ttx:expires=2026-08-02T18:00:00Z` | The hard end of the lease, in UTC   |
+only.
 
 <a id="iac-metal"></a>
 
@@ -142,8 +62,7 @@ Three operational stacks, with three lifecycles, and one image stack.
 The stack holds the buckets, the IAM applications and policies, the budget, and
 the billing alerts. Apply this stack rarely. Review each change like all code.
 
-Four buckets exist. A bucket name is unique across the whole Scaleway platform,
-so each name carries a project suffix. The bootstrap runbook records the suffix.
+Four buckets exist.
 
 | Logical name               | Lane                  | Versioning | Purpose                   |
 | -------------------------- | --------------------- | ---------- | ------------------------- |
@@ -155,25 +74,15 @@ so each name carries a project suffix. The bootstrap runbook records the suffix.
 The lane rule of [corpus](corpus.md) is absolute, so the storage layer must
 enforce it. The two corpus lanes must live in separate buckets. Eval and RAG
 material must not enter `ttx-corpus-<suffix>`. Eval and RAG raw text must not
-enter `ttx-artifacts-<suffix>`. No bucket is public. Each bucket keeps the
-default private ACL. Set `force_destroy = false` on each bucket.
+enter `ttx-artifacts-<suffix>`.
 
 Versioning is off on the checkpoint bucket, because a checkpoint is large and a
 run writes one after each epoch. Scaleway holds at most 1,000 versions of one
 object, and it bills each version. A checkpoint key must therefore carry the run
 identifier and the step number, so no key is overwritten.
 
-A lifecycle rule must abort an incomplete multipart upload after one day.
-Scaleway bills an incomplete multipart upload. A destroy during an upload
-creates one.
-
-A storage class is a property of an object, not of a bucket. An object with no
-class becomes Standard Multi-AZ. A transition to Standard One Zone needs an
-object age of 30 days. A transition to Glacier needs an object age of 90 days.
 Do not send a checkpoint to Glacier. A Glacier restore takes up to 24 hours to
 start, and it restores to Standard Multi-AZ only.
-
-Object lock must stay off on each bucket. Object lock cannot be disabled again.
 
 <a id="iac-dev"></a>
 
@@ -262,6 +171,10 @@ one token with llama.cpp. A failure must fail the workflow.
 The host must pin an exact qemu version. A qemu upgrade must not reach the host
 without the guest-boot test above. The host holds no durable state.
 
+A GitHub-hosted runner has no KVM, so it cannot run the agentic suite. CI must
+drive the suite on the development host. If the repository is public, do not
+register a self-hosted runner. Use SSH from a GitHub-hosted runner instead.
+
 - **IAC-DEV-1** — The host declares one guest for each parallel scenario, in one
   `.fuguvmrc` of the `fuguvm` tool. Each guest carries its own name, and each
   guest takes its host ports automatically. The guests share one read-only image
@@ -331,13 +244,13 @@ Elastic Metal server only.
 
 Cloud-init pulls the Axolotl and vLLM images and installs the S3 client.
 Cloud-init must not receive a credential, because `user_data` is readable
-through the instance API. CI delivers the train credential over SSH after boot,
-and the first SSH step synchronizes the corpus from Object Storage to scratch
-NVMe ([credentials](#credentials)). The cloud-init must not run a distribution
-upgrade. A `package_upgrade` on a GPU OS image breaks the NVIDIA driver, and the
-failure survives a reboot. If the cloud-init upgrades a package, it must set
-`apt_get_upgrade_subcommand: "upgrade"`. A broken driver still bills at the full
-GPU rate.
+through the instance API. CI delivers the train credential over SSH after boot
+([infra/CLAUDE.md](../infra/CLAUDE.md)), and the first SSH step synchronizes the
+corpus from Object Storage to scratch NVMe. The cloud-init must not run a
+distribution upgrade. A `package_upgrade` on a GPU OS image breaks the NVIDIA
+driver, and the failure survives a reboot. If the cloud-init upgrades a package,
+it must set `apt_get_upgrade_subcommand: "upgrade"`. A broken driver still bills
+at the full GPU rate.
 
 Apply this stack at the start of a training session. Destroy it at the end.
 There are no stop or hibernate half-states: **down means destroyed**. A stopped
@@ -434,123 +347,6 @@ The development host follows the same rule: everything on it rebuilds from git
 and from Object Storage. Elastic Metal accepts no Block Storage volume, so the
 platform enforces the rule.
 
-<a id="iac-state"></a>
-
-## State
-
-OpenTofu state lives in a dedicated Scaleway Object Storage bucket, through the
-S3-compatible backend. Each stack keeps its own key.
-
-The backend must set `use_lockfile = true`. Scaleway Object Storage supports
-conditional writes, so the backend holds a native lock. The lock is necessary,
-because three writers exist: CI, the operator, and the development host. A
-`tofu apply` must not set `-lock=false`. A pull-request plan must set
-`-lock=false`, because a plan writes no state.
-
-The backend block must use `endpoints = { s3 = ... }` and `use_path_style`. The
-arguments `endpoint` and `force_path_style` are deprecated. The backend must
-take its credential from the environment. The backend block must not hold an
-access key or a secret key.
-
-The state bucket must have versioning on. A lifecycle rule must expire a
-noncurrent version after 30 days, because the lock adds a write and a delete at
-each run.
-
-The state object holds a secret. `scaleway_iam_api_key` exports `secret_key` as
-a state attribute, and the corpus synchronization key reaches the state through
-`user_data`. Three controls apply together:
-
-1. OpenTofu must encrypt the state and the plan.
-2. A bucket policy on the state bucket must name each principal that needs the
-   bucket, and no other principal.
-3. OpenTofu must not create the pipeline key, the operator key, or the train
-   key.
-
-A bucket policy is an allow list. A Deny statement has no effect under version
-`2023-04-17`. A bucket holds one policy, and a new policy overwrites the old
-one. A principal that the policy does not name loses access to that bucket. Test
-each bucket-policy change on a scratch bucket first.
-
-Recovery from a bad state is a human act. The runbook must hold the
-`tofu force-unlock` procedure and the `tofu import` procedure.
-
-<a id="iac-cred"></a>
-
-## Credentials
-
-Scaleway offers no federation for a machine caller. A stored API key is the only
-option, so each key needs a scope, an expiry, and a rotation period.
-
-Three IAM applications split the credentials by blast radius
-([decisions](DECISIONS.md), D9). The persistent stack declares each application
-and each policy. The persistent stack must not declare an API key.
-
-- **The pipeline application.** Its API key lives in the CI environment, as a
-  secret. Its policy permits: apply and destroy of `infra/dev`, `infra/train`,
-  and `infra/image`; read and write of Object Storage in the project; and read
-  of consumption and billing data. IAM administration and project deletion are
-  excluded, so the credential cannot widen its own scope. The policy must not
-  hold `IAMManager`, `OrganizationManager`, or `ProjectManager`.
-- **The operator application.** Its API key lives in the operator environment
-  (`SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, `SCW_DEFAULT_PROJECT_ID`,
-  `SCW_DEFAULT_ORGANIZATION_ID`). A human holds it. Its policy adds the IAM
-  administration that `infra/persistent` needs. In CI, only a protected manual
-  workflow dispatch uses it, and only to apply `infra/persistent`. The same
-  application serves recovery, for example a manual `make infra-down` when CI is
-  not available.
-- **The train application.** Its policy permits read and write of Object Storage
-  in the project, and nothing else. Each of its keys lives for one campaign.
-
-An environment variable beats the `provider` block. CI must export exactly one
-credential set. The `provider` block must not set `access_key`, `secret_key`, or
-`project_id`.
-
-IAM grants access to Object Storage at the project level. IAM cannot grant
-access to one bucket. The training instance therefore reaches each bucket in the
-project. A bucket policy is the only per-bucket control, and both gates must
-allow the action.
-
-A new policy needs up to one minute to apply, and up to five minutes for Object
-Storage. The first bucket call after a policy change must retry.
-
-No credential is in the repository. A human creates the pipeline key and the
-operator key with `scw iam api-key create` and sets `expires-at`. An expiry
-cannot be changed afterwards, so a rotation is always a create and a delete. An
-application holds several keys at the same time, so a rotation causes no outage.
-Rotate the pipeline key after each training campaign, and at 90 days.
-
-Rotation order:
-
-1. Create a second key on the same application.
-2. Set the new key in the CI secret.
-3. Run one workflow and confirm it passes.
-4. Delete the old key.
-
-<a id="iac-traincred"></a>
-
-### The train credential
-
-A Scaleway instance has no metadata identity. `user_data` is readable through
-the instance API. A managed `scaleway_iam_api_key` writes its secret to state.
-The train key therefore must not touch OpenTofu, `user_data`, or state:
-
-1. At `make infra-up STACK=train`, CI creates a key on the train application
-   with `scw iam api-key create`, and sets `expires-at` to the value of the
-   `ttx:expires` tag.
-2. CI delivers the key to the instance over SSH, after boot. The SSH channel is
-   the same transport that `make train-cpt` uses.
-3. The first SSH step synchronizes the corpus to scratch NVMe.
-4. `make infra-down STACK=train` deletes the key. The expiry is the backstop
-   when the teardown fails.
-
-<a id="iac-ssh"></a>
-
-### SSH keys
-
-Each SSH key is an IAM resource. `ssh_key_ids` is required on the metal server,
-and a change to it forces a reinstall. Rescue mode authenticates with the same
-keys. The runbook must record which key reaches which host.
-
 <a id="iac-except"></a>
 
 ## Resources outside OpenTofu
@@ -589,107 +385,22 @@ These human acts precede the first apply. No credential replaces them.
 
 ## Spend guardrails
 
-One guardrail blocks. The others inform or gate.
+The guardrail design is in [infra/CLAUDE.md](../infra/CLAUDE.md). The FuguTTX
+values:
 
-| Guardrail                         | Kind                  | Effect                                  |
-| --------------------------------- | --------------------- | --------------------------------------- |
-| Per-Organization quotas           | Platform, hard        | Scaleway refuses to create the resource |
-| Scoped IAM policies               | Platform, hard        | Scaleway refuses the action             |
-| The monthly budget and its alerts | Platform, soft        | Scaleway sends a notification           |
-| The pre-apply forecast check      | Pipeline              | The pipeline stops its own apply        |
-| The idle watchdog                 | Pipeline, best effort | The pipeline destroys an idle stack     |
-
-**Quotas.** Ask Scaleway Support to set a quota of 1 for `H100-1-80G`, 1 for
-`L40S-1-48G`, and 1 for the dev offer, in `fr-par-2`. A quota applies per
-Organization and per Availability Zone, so one zone bounds the exposure.
-
-**The budget.** A monthly budget on the Scaleway Organization. Scaleway has no
-project-level budget. The initial budget is EUR 1,500 ([training](training.md)).
-Only a human raises it. `scaleway_billing_budget` takes the value in cents. A
-Scaleway budget notifies. It does not block. It is not a cap.
-
-**The alerts.** Billing alerts at 50, 75, and 100 percent of the budget, to
-email and to a CI webhook. Scaleway triggers an alert on the amount after
-discount and tax. Each price in this project is before tax. The runbook must
-record the tax status of the Organization, and must derive the budget value from
-it.
-
-**The forecast check.** Before each `tofu apply`, the pipeline reads
-`GET /billing/v2beta1/consumptions` for the project. The pipeline stops the
-apply when either condition holds:
-
-| Condition                                                  | Reason                       |
-| ---------------------------------------------------------- | ---------------------------- |
-| The `updated_at` field is older than 6 hours               | The data is too old to trust |
-| Consumption plus the forecast of the run passes the budget | The run cannot complete      |
-
-The forecast is the hourly price of the instance multiplied by the maximum
-lifetime of the run. A level check alone cannot bound spend, because it looks
-only at money already spent. Scaleway publishes no freshness figure for the
-consumption data.
-
-**The idle watchdog.** `make infra-watchdog` runs every 30 minutes from CI, and
-every 30 minutes from a systemd timer on the development host. The target must
-be idempotent. A scheduled GitHub workflow is best effort. GitHub delays it
-under load, and GitHub disables it after 60 days with no new commit in a public
-repository. The second timer is therefore necessary.
-
-A train stack is **idle** when each test passes:
-
-| Test                                                        | Value |
-| ----------------------------------------------------------- | ----- |
-| The stack holds a server tagged `ttx:lifecycle=ephemeral`   | true  |
-| The server is older than 20 minutes                         | true  |
-| The heartbeat object is absent, or is older than 20 minutes | true  |
-
-The training driver writes the heartbeat object every 60 seconds, on a timer.
-The timer must not depend on checkpointing, because an epoch can exceed 20
-minutes. The driver claims the stack once at start, with an `If-None-Match: *`
-conditional write against an owner object. A second run fails the claim and must
-not start.
-
-The watchdog destroys the train stack when the stack is idle, or when the
-current time passes the `ttx:expires` tag, whichever comes first. The watchdog
-must report, and must not destroy, a resource with no `ttx:managed` tag. The
-watchdog must report a state lock older than two hours. The watchdog must never
-touch a resource tagged `ttx:lifecycle=persistent`.
-
-<a id="iac-teardown"></a>
-
-## Teardown
-
-`tofu destroy` alone is not a teardown. A cancelled apply can create a resource
-that never enters the state file, and that resource bills without limit.
-
-A destroy of `infra/train` must remove the server, the scratch volume, the root
-volume, and the routed IPv4 address. Scaleway bills a reserved IPv4 whether it
-is attached or not.
-
-`make infra-watchdog` reconciles the live resources against the state of each
-stack. It reports each resource that carries no `ttx:managed` tag. A human
-removes it.
-
-A teardown of the whole project runs in this order: `train`, then `dev`, then
-`image`, then `persistent`. A destroy of `persistent` surrenders four globally
-unique bucket names. Only a human runs it.
+- **Quotas.** Ask Scaleway Support to set a quota of 1 for `H100-1-80G`, 1 for
+  `L40S-1-48G`, and 1 for the dev offer, in `fr-par-2`.
+- **The budget.** The initial budget is EUR 1,500 per month
+  ([training](training.md)), with alerts at 50, 75, and 100 percent.
 
 <a id="iac-tasks"></a>
 
 ## Task runner
 
+The shared `infra-*` targets are in [infra/CLAUDE.md](../infra/CLAUDE.md).
+FuguTTX adds:
+
 ```
-make infra-bootstrap            # the state bucket and its lifecycle rule — a human, once
-make infra-fmt-check            # tofu fmt -recursive -check — no credential
-make infra-validate STACK=name  # tofu validate — no credential
-make infra-check                # infra-fmt-check, then infra-validate for each stack
-make infra-plan STACK=name      # tofu plan — review what a session will create
-make infra-plan-ro STACK=name   # tofu plan -lock=false — the pull-request plan
-make infra-up STACK=name        # tofu apply — GPU billing starts here for train
-make infra-down STACK=name      # tofu destroy — billing stops here
-make infra-status               # list live resources, so nothing idles unnoticed
-make infra-price STACK=name     # print the hourly price of the stack compute
-make infra-cost                 # month-to-date consumption against the budget
-make infra-watchdog             # destroy an idle train stack; report an orphan
 make dev-rebuild-check          # the reinstall gates
 make dev-reinstall              # reinstall the development host in place
 make image-build                # autoinstall OpenBSD under qemu; emit a qcow2
@@ -700,61 +411,6 @@ make train-sft                  # run the SFT config
 make eval-sweep                 # run an evaluation sweep
 ```
 
-The same targets run in CI and on the development host. `make check` must call
-`make infra-check`, so a local run reproduces the CI gate. `make infra-down` is
-a first-class step of the training runbook, not an afterthought.
-
-`make infra-price STACK=train` reads `hourly_price` from the
-`scaleway_instance_server_type` data source. `make infra-price STACK=dev` must
-call the Scaleway Product Catalog API, because the Elastic Metal offer data
-source exposes no price. Do not hardcode a price in the repository.
-
 The runbook must state how a target reaches the GPU instance. `make train-cpt`
 runs on the instance, and the transport is part of the deterministic entry point
 that D8 requires.
-
-<a id="iac-ci"></a>
-
-## CI
-
-CI operates the pipeline. An operator does not need to.
-
-Each trigger binds to one credential and one guard:
-
-| Trigger             | Job                                     | Credential         | Guard                                                   |
-| ------------------- | --------------------------------------- | ------------------ | ------------------------------------------------------- |
-| `pull_request`      | `tofu fmt -check`, `tofu validate`      | none               | Each pull request                                       |
-| `pull_request`      | `tofu plan -lock=false`                 | none, or read only | The branch is not a fork                                |
-| `push` to `main`    | `tofu apply` of `dev`, `train`, `image` | pipeline           | Environment `infra-apply`                               |
-| `workflow_dispatch` | Any action of `dev`, `train`, `image`   | pipeline           | Environment `infra-apply`                               |
-| `workflow_dispatch` | `tofu apply` of `infra/persistent`      | operator           | Environment `infra-admin`, with a required human review |
-| `schedule`          | Watchdog, reinstall                     | pipeline           | Environment `infra-apply`                               |
-
-A workflow must not use the `pull_request_target` trigger. A plan job must not
-run on a pull request from a fork. `tofu init` runs the provider binary that the
-branch names, so a plan on an untrusted branch executes untrusted code. The
-`infra-apply` environment must permit the `main` branch only.
-
-The `infra-admin` environment holds the operator key. A required human review
-gates each of its runs. Operation runs with the pipeline credential: plan and
-apply of `dev`, `train`, and `image`, training campaigns, evaluation sweeps, the
-idle watchdog, and the scheduled reinstall of the development host.
-
-One concurrency group serializes each apply, per stack. The group must set
-`cancel-in-progress: false`, because the runner kills a cancelled step after
-about ten seconds and a cancelled apply can orphan a billed resource. The group
-must set `queue: max`, because the default keeps one pending run and cancels the
-rest. A concurrency group does not replace the state lock.
-
-A GitHub-hosted runner has no KVM, so it cannot run the agentic suite. CI must
-drive the suite on the development host. If the repository is public, do not
-register a self-hosted runner. Use SSH from a GitHub-hosted runner instead.
-
-The workflow logs are one audit trail. Scaleway Audit Trail is the second, and
-it is free. It records each `CreateServer` and `DeleteServer` call for Instances
-and for Elastic Metal, with the principal and the source address. Audit Trail
-keeps 90 days, so a daily export writes each day to the artifacts bucket. Audit
-Trail does not cover Object Storage, Block Storage, or Billing.
-
-A human can start any stack action with a manual workflow dispatch. The spend
-guardrails bound every workflow.
