@@ -3,3 +3,4 @@
 sync.pack org
 sync.pack infra
 sync.pack web
+sync.pack python
