@@ -6,9 +6,9 @@ FuguTTX makes TTX 1: a fine-tune of Qwen3-4B on OpenBSD knowledge. The model
 operates locally and offline, on the CPU only, on OpenBSD in 16 GB of RAM or
 less, through llama.cpp.
 
-The model and the harness together make the TTX agent. The `ttx` harness —
-Perl 5 over Fugu — operates the model in the boundaries of pledge, unveil,
-doas rules, and dry-run gates.
+The model and the harness together make the TTX agent. The `ttx` harness — Perl
+5 over Fugu — operates the model in the boundaries of pledge, unveil, doas
+rules, and dry-run gates.
 
 Two pilot projects rehearse the FuguTTX production pipeline at small scale:
 [FuguCTX](https://github.com/FuguBSD/FuguCTX) and
