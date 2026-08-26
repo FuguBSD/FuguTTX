@@ -3,7 +3,7 @@
 Development agents — Claude agents — plan, develop, and maintain this monorepo.
 Humans review outcomes; they do not type the code. This document specifies what
 the agents need: the environment, the credentials, the feedback loops, and the
-boundaries. In this document, “agent” means a development agent, not the TTX
+boundaries. In this document, "agent" means a development agent, not the TTX
 agent.
 
 <a id="agt-iface"></a>
@@ -13,9 +13,9 @@ agent.
 Each action has a deterministic entry point: a `make` target for each pipeline
 stage, OpenTofu for each cloud resource, version-controlled Axolotl YAML for
 each training run, and a runbook in `docs/runbooks/` for each operational
-sequence. Agents run the same commands as humans. Thus each action is
-reproducible and auditable, no matter who did it. If a capability has no target,
-add the target. Do not work around it.
+sequence. Agents run the same commands as humans. So each action is reproducible
+and auditable, no matter who did it. If a capability has no target, add the
+target. Do not work around it.
 
 <a id="agt-runtime"></a>
 
@@ -62,7 +62,7 @@ repository. Each credential has the minimum scope for its capability:
 
 The operator application applies `infra/persistent`, which declares the IAM
 objects. A human holds its key, and a protected manual workflow dispatch is the
-only CI route to it ([infrastructure](infrastructure.md)). Thus the pipeline
+only CI route to it ([infrastructure](infrastructure.md)). So the pipeline
 credential cannot widen its own scope.
 
 IAM cannot grant access to one bucket. A bucket policy is the only per-bucket
@@ -89,7 +89,7 @@ Only a human raises the budget.
 ## Feedback loops
 
 Autonomous development is only as good as its verification. Each component
-defines “done” in a form a machine can check:
+defines "done" in a form a machine can check:
 
 - `make check` reproduces the full CI gate locally.
 - Evaluation results are machine-readable scorecards, not prose.

@@ -54,10 +54,10 @@ too slow on the CPU.
 
 ## Performance
 
-CPU llama.cpp is limited by memory bandwidth. Consumer hardware gives
-approximately 10–15 tokens/s for a 7B-class model. **No OpenBSD-specific
-tokens/s benchmark exists in public.** FuguTTX measures this first-hand with
-`llama-bench` on target hardware. FuguTTX publishes the results.
+Memory bandwidth limits CPU llama.cpp. Consumer hardware gives approximately
+10–15 tokens/s for a 7B-class model. **No OpenBSD-specific tokens/s benchmark
+exists in public.** FuguTTX measures this first-hand with `llama-bench` on
+target hardware. FuguTTX publishes the results.
 
 Token generation reads all weights for each token. Memory bandwidth therefore
 sets a hard ceiling. A STREAM measurement gives the Apple M1 CPU 59 GB/s and the
@@ -92,9 +92,9 @@ ceiling can hold while a task still takes too long. An end-to-end budget
 therefore governs:
 
 - **The reference task** is one agentic scenario from the evaluation suite:
-  “Block inbound SSH, except from 10.0.0.0/8, in pf.conf,” up to the
+  "Block inbound SSH, except from 10.0.0.0/8, in pf.conf," up to the
   confirmation prompt.
-- **The budget:** the reference task must complete in **5 minutes or less** on
+- **The budget** — the reference task must complete in **5 minutes or less** on
   the M1 reference machine, at Q4_K_M, through the harness.
 - The measurement covers full agent turns: prompt processing, generation, and
   tool time, per turn and per task. `llama-bench` numbers do not substitute for
@@ -175,8 +175,8 @@ August 2026. Four facts control the result.
   is the aarch64 build fix above.
 
 OpenBSD does support GPU offload on amd64 with an AMD card, through the ggml
-Vulkan back end. D2 is therefore “CPU only on the target hardware”. D2 is not
-“OpenBSD has no GPU path”.
+Vulkan back end. D2 is therefore "CPU only on the target hardware". D2 is not
+"OpenBSD has no GPU path".
 
 <a id="inf-integrity"></a>
 

@@ -20,7 +20,7 @@ work. It goes in a variant.
 ## Overlays, not forks
 
 Each variant starts from the CPT checkpoint of TTX 1. The clean corpus contains
-the base source tree, the ports tree, and their commit logs. Thus the domain
+the base source tree, the ports tree, and their commit logs. So the domain
 knowledge is shared: the CPT checkpoint carries it, from the clean corpus and
 its synthetic augmentation (D4). The SFT mix is what makes a variant different.
 The corpus components that seed each trace mix are specified per variant
@@ -62,7 +62,7 @@ variant ships. That result is a success, not a failure.
 
 | Candidate      | Persona and scope                                                                                          | Evaluation story                                                                                                                                                                                                   |
 | -------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **TTX 1 Port** | Ports-tree maintenance: Makefiles, `bsd.port.mk`, PLIST discipline, port updates to new upstream releases. | Strongest candidate. A port builds, or it does not. `portcheck` and `make port-lib-depends-check` are machine-checkable. “Update port X to upstream release Y” grades end to end in a qemu VM.                     |
+| **TTX 1 Port** | Ports-tree maintenance: Makefiles, `bsd.port.mk`, PLIST discipline, port updates to new upstream releases. | Strongest candidate. A port builds, or it does not. `portcheck` and `make port-lib-depends-check` are machine-checkable. "Update port X to upstream release Y" grades end to end in a qemu VM.                     |
 | **TTX 1 Code** | OpenBSD-flavored development: patches against the ports and src trees, Perl, shell, `rc.d` scripts.        | Weakest candidate. No known benchmark exists for OpenBSD src work. The suite must be built: does the patch apply, compile, and pass regress? Kernel and libc patch generation is out of scope for this size class. |
 
 A port evaluation builds the port in a disposable guest of the agentic suite

@@ -18,19 +18,19 @@ The base model must have all of these properties:
 
 ## Why Qwen3-4B
 
-- **License:** Apache 2.0 for the full dense family (0.6B, 1.7B, 4B, 8B, 14B,
+- **License** — Apache 2.0 for the full dense family (0.6B, 1.7B, 4B, 8B, 14B,
   32B). This is the most important criterion.
-- **Capability at size:** Qwen3-4B is equal to much larger prior-generation
+- **Capability at size** — Qwen3-4B is equal to much larger prior-generation
   models. The Qwen3 line has explicit agentic and tool-call training.
-- **Context:** the dense models give 32K context at 0.6B–4B, and 128K at 8B and
+- **Context** — the dense models give 32K context at 0.6B–4B, and 128K at 8B and
   above. This is sufficient for sysadmin tasks with retrieved man-page context.
-- **Ecosystem:** first-class support in Axolotl, HF TRL, and llama.cpp.
+- **Ecosystem** — first-class support in Axolotl, HF TRL, and llama.cpp.
 
 <a id="mdl-pin"></a>
 
 ## Revision pin and re-survey
 
-“Qwen3-4B” names a family line, and the line has revisions. The 2507 refresh
+"Qwen3-4B" names a family line, and the line has revisions. The 2507 refresh
 split the hybrid model into two revisions: Qwen3-4B-Instruct-2507 and
 Qwen3-4B-Thinking-2507, both Apache 2.0. The Instruct revision is natively
 non-thinking, it raises the context length, and it reports stronger agentic and
@@ -48,9 +48,9 @@ at the re-survey.
 
 ## Excluded models
 
-- **Llama 3.x:** a custom license with a 700M monthly-active-user clause, plus
+- **Llama 3.x** — a custom license with a 700M monthly-active-user clause, plus
   name and derivative restrictions.
-- **Gemma 3:** a Prohibited Use Policy, plus flow-down redistribution
+- **Gemma 3** — a Prohibited Use Policy, plus flow-down redistribution
   obligations.
 
 These licenses are not OSI-approved. They do not agree with the permissive-only
@@ -83,7 +83,7 @@ natively non-thinking revision removes that mismatch (see
 
 IBM Granite 3.x and SmolLM3-3B (both Apache 2.0) are the named fallbacks. Use
 them if the Qwen line becomes unavailable or unsuitable. SmolLM3 has fully open
-weights, data, and recipe. It is applicable to a “fully open” TTX variant.
+weights, data, and recipe. It is applicable to a "fully open" TTX variant.
 
 <a id="mdl-vbase"></a>
 

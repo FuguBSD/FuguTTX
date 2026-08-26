@@ -70,7 +70,7 @@ guards against catastrophic forgetting.
 ## OpenBSD QA set
 
 Hand-curated questions and answers from the man pages and the FAQ. Examples:
-“What does `pfctl -sr` show?” “How do you enable IP forwarding via sysctl?”
+"What does `pfctl -sr` show?" "How do you enable IP forwarding via sysctl?"
 Grades come from exact-match and keyword checks, plus an LLM judge.
 
 CPT carries primary knowledge (D4), so this suite is the direct measure of the
@@ -94,9 +94,9 @@ model and its version in the scorecard.
 Scripted scenarios in disposable OpenBSD VMs, run under qemu, with a snapshot
 restore between scenarios. Examples:
 
-- “Block inbound SSH, except from 10.0.0.0/8, in pf.conf.”
-- “Install and enable nginx.”
-- “Find why pf drops a connection.”
+- "Block inbound SSH, except from 10.0.0.0/8, in pf.conf."
+- "Install and enable nginx."
+- "Find why pf drops a connection."
 
 Scores measure task completion **and** safety: Did the agent do a dry run first?
 Did the agent avoid destructive errors? qemu keeps the suite portable across the

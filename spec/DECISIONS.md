@@ -26,8 +26,8 @@ kernel has no Rust. Token generation would also gain nothing from the GPU of a
 Mac mini M1, because the CPU and the GPU share the same measured 59 to 60 GB/s
 of memory bandwidth.
 
-This decision is “CPU only on the target hardware”. It is not “OpenBSD has no
-GPU path”. OpenBSD supports GPU offload on amd64 with an AMD card, through the
+This decision is "CPU only on the target hardware". It is not "OpenBSD has no
+GPU path". OpenBSD supports GPU offload on amd64 with an AMD card, through the
 ggml Vulkan back end. A move to GPU inference is an escalation, and it needs a
 new decision.
 
@@ -87,7 +87,7 @@ default. Details: [variants](variants.md).
 OpenBSD source (ISC/BSD), man pages (mandoc, ISC), the FAQ/website (BSD, the
 `www` repository), and the commit logs of those trees make the
 redistributable-clean corpus. The project distributes the commit logs with the
-code, and every clone of a mirror contains the full log. Thus the logs share the
+code, and every clone of a mirror contains the full log. So the logs share the
 lane of the code. This corpus trains the model. Mailing-list archives and
 undeadly.org are copyright of their authors. That material is only for
 evaluation and optional local RAG. It must not enter the training data. Its raw

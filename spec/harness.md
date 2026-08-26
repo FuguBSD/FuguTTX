@@ -93,7 +93,7 @@ act → observe loop against it. Together they make the TTX agent: the model
 proposes, the harness decides and executes.
 
 `llama-server` constrains tool calls at sample time with its JSON-schema/grammar
-support. Thus model output is parseable by construction. `JSON::PP` validates it
+support. So model output is parseable by construction. `JSON::PP` validates it
 again, under a fixed nesting depth (`max_depth`) and a fixed size (`max_size`).
 The internal record has a fixed maximum length. The HTTP client has a fixed
 timeout. Each step has a fixed budget of turns. A malformed call gets one
@@ -168,7 +168,7 @@ parses untrusted input must not hold `exec`**. Model output is untrusted input.
   and the parent (see [Liveness](#liveness)).
 
 The parent starts each child with fork and exec of its own program, with a role
-flag. Each child thus gets a fresh address-space layout.
+flag. Each child therefore gets a fresh address-space layout.
 
 Base Perl cannot pass a file descriptor over a socket. The core `Socket` module
 wraps neither `sendmsg(2)` nor `recvmsg(2)`, so `SCM_RIGHTS` is not expressible
@@ -283,9 +283,9 @@ The dry-run gate is a protocol, not a prompt. These rules define it:
   other process can rewrite a candidate between the confirmation and the
   install.
 
-The digest binds the confirmation to what the system will do, not only to what
-the operator saw. A confirmation therefore applies only to the exact action that
-the operator saw. No pending action outlives its session. The daemon serves one
+The digest binds the confirmation to what the system does, not only to what the
+operator saw. A confirmation therefore applies only to the exact action that the
+operator saw. No pending action outlives its session. The daemon serves one
 session at a time, so a stalled confirmation must not block the daemon. The
 timeout of HRN-CONFIRM-7 releases it.
 
@@ -345,7 +345,7 @@ install is therefore a two-step commit:
 3. A revert timer starts. The default window is 120 seconds.
 4. The operator confirms connectivity through the client, inside the window.
 5. Without the second confirmation, the parent restores the saved file, and it
-   loads the file through the same wrapper. A lockout thus heals itself.
+   loads the file through the same wrapper. A lockout therefore heals itself.
 6. A session disconnect before the second confirmation triggers the same revert.
 
 The revert is the one mutation that runs without a fresh confirmation. It only
@@ -359,8 +359,8 @@ restores the ruleset that was live before the install.
   [the agent loop](#the-agent-loop)).
 
 <a id="hrn-tool-table"></a>Each tool has one row in a static metadata table. The
-table generates both the tool line of the system prompt and the JSON schema.
-Thus the prompt and the policy cannot drift.
+table generates both the tool line of the system prompt and the JSON schema. So
+the prompt and the policy cannot drift.
 
 <a id="hrn-loop"></a>
 
@@ -389,7 +389,7 @@ Five rules control the loop:
   each turn, so a reply without a call cannot end the step. The grammar and the
   stop condition are therefore one joint design. When the turn budget is
   exhausted, the harness makes one final model call that permits only the
-  `report` tool. Thus each step ends with a report.
+  `report` tool. So each step ends with a report.
 - **HRN-LOOP-5 — Errors divide into two classes.** A harness or transport
   failure is fatal: the step stops, and the operator sees the error. Model
   misbehavior — a malformed call, an unknown tool, invalid arguments, an empty
@@ -406,7 +406,7 @@ parent must not start a new model call. The parent starts each tool in its own
 session, so the tool leads a process group. It kills that group with
 `Fugu::Process->terminate`, in the process-group form: a `SIGTERM`, a grace
 period, then a `SIGKILL`. The parent appends a synthesized error result for each
-unanswered tool call. Thus no tool call in the transcript lacks a result. The
+unanswered tool call. So no tool call in the transcript lacks a result. The
 process-group form must exist in the installed distribution, and the minimum
 version of [HRN-PKG](#hrn-pkg) covers it. This specification does not fix the
 abort mechanism for an in-flight model generation.
@@ -497,9 +497,9 @@ convention.
 - The trigger is deterministic. The operator invokes a skill by name, or the
   harness matches an optional frontmatter `triggers` keyword list against the
   operator prompt. The model must not select skills from a catalog. A 4B model
-  follows a “read the file yourself” instruction weakly.
+  follows a "read the file yourself" instruction weakly.
 - An invocation can carry arguments. The harness substitutes `$ARGUMENTS` and
-  `$1` to `$n` in the body before injection. A skill is thus a reusable runbook.
+  `$1` to `$n` in the body before injection. So a skill is a reusable runbook.
 - The harness injects the skill body into the step as a context message. The
   body budget is 4,096 bytes. The harness truncates above it, and it logs a
   warning.
@@ -612,14 +612,14 @@ old files safely. This specification does not fix the append discipline.
   Transient progress events go to the client only.
 - **Record size cap.** A tool-result record keeps the full tool output, up to a
   hard cap of 65,536 bytes per record. Above the hard cap, the record keeps the
-  head and the tail, with a marker. No spool directory exists. Thus the parent
+  head and the tail, with a marker. No spool directory exists. So the parent
   unveil table stays a complete enumeration.
 - **Three consumers, one file.** The model context, client replay, and the audit
   all derive from the transcript. Replay is side-effect-free. It never
   re-executes a tool. A replayed event carries a replay mark, so the client
   cannot confuse it with a live event.
 - **Crash record.** On a fatal error, the parent appends an error record before
-  it exits. Thus the transcript records the crash.
+  it exits. So the transcript records the crash.
 - **Usage accounting.** Each model-response record embeds the usage counts that
   llama-server returns. Totals derive from the transcript. No second store
   exists.
@@ -632,7 +632,7 @@ old files safely. This specification does not fix the append discipline.
   request body and each raw response to a per-session wire log,
   `/var/log/ttx/wire-<id>.jsonl`. The parent opens the file in append mode
   before the fork, and the model process inherits the descriptor. The parent
-  starts a fresh model process for each session. Thus each session has its own
+  starts a fresh model process for each session. So each session has its own
   wire-log descriptor, its own connection, and a fresh address-space layout. A
   write to an open descriptor sits inside the `stdio` promise, so the
   model-process pledge does not widen. The wire log holds everything the model
@@ -717,7 +717,7 @@ Safety is first-class, not optional.
 
 - <a id="hrn-safe-display"></a>**Untrusted display.** The client shows dry-run
   output and diffs that derive from model-influenced bytes. A terminal escape
-  sequence in that data can rewrite the operator’s view, and it can hide the
+  sequence in that data can rewrite the operator's view, and it can hide the
   real change. The client must replace each byte outside a strict printable set
   before display. The strict set is printable ASCII, plus newline and tab. The
   client must remove `DEL` (0x7F) and the C1 range (0x80–0x9F), and it must not
@@ -745,7 +745,7 @@ enters the harness.
 
 The signify key is per generation, in the OpenBSD practice. The project
 generates a key two releases ahead, and each release ships the public key of the
-next release. A release thus validates the next key without a new out-of-band
+next release. So a release validates the next key without a new out-of-band
 step.
 
 `llama-server` loads the GGUF later, as `_ttxllm`, by path. A verified artifact

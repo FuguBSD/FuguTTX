@@ -9,8 +9,8 @@ host, the training instance, the guest image, and the human prerequisites. The
 project code is `ttx`, and FuguTTX has its own Scaleway Project in the shared
 Organization.
 
-Do not make resources in the console. Seven exceptions exist. “Resources outside
-OpenTofu” lists them. Each price in this document carries the date it was read.
+Do not make resources in the console. Seven exceptions exist. "Resources outside
+OpenTofu" lists them. Each price in this document carries the date it was read.
 Scaleway revised prices on 2026-06-01. Do not plan a campaign against a price in
 this document.
 

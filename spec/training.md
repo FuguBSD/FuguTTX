@@ -119,7 +119,7 @@ Scaleway GPU OS image supplies the NVIDIA drivers, Docker, and the NVIDIA
 container toolkit. All Axolotl YAML configurations live in
 `packages/ttx-train/configs/`, under version control. A run is `make train-cpt`
 or `make train-sft` against a provisioned instance. Checkpoints synchronize to
-Object Storage after each epoch. Thus instance destruction cannot lose work.
+Object Storage after each epoch. So instance destruction cannot lose work.
 
 <a id="trn-budget"></a>
 
