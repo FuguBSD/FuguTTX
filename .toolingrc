@@ -2,3 +2,4 @@
 # scripts read their identity keys here. See FuguBSD/Tooling.
 sync.pack org
 sync.pack infra
+sync.pack web
