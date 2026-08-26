@@ -25,9 +25,11 @@ is the authoritative reference. Research notes live in `docs/research/`.
 make setup       # install the development tools into .venv
 make deps        # install the Fugu distribution and the Scaleway CLI
 make check       # lockfile + ruff + spec-check + ste-lint + test
-make format-fix  # format the Python code
-make format-md   # Markdown formatting check
+make format-fix  # format the Python, Markdown, JSON and YAML
 ```
+
+`make check` runs the Markdown format gate, and prettier runs through bunx. The
+operator installs bun, for example from Homebrew. No deps manifest provides it.
 
 ## Commit scopes
 
