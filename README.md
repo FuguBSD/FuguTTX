@@ -24,12 +24,13 @@ is the authoritative reference. Research notes live in `docs/research/`.
 ```sh
 make setup       # install the development tools into .venv
 make deps        # install the Fugu distribution and the Scaleway CLI
-make check       # lockfile + ruff + spec-check + ste-lint + test
+make check       # lockfile + ruff + spec-check + ste-lint + gitleaks + test
 make format-fix  # format the Python, Markdown, JSON and YAML
 ```
 
 `make check` runs the Markdown format gate, and prettier runs through bunx. The
-operator installs bun, for example from Homebrew. No deps manifest provides it.
+operator installs bun and gitleaks, for example from Homebrew. No deps manifest
+provides them.
 
 ## Commit scopes
 
