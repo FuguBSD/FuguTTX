@@ -56,12 +56,3 @@ fit.
 - **The threshold policy.** `spec/evaluation.md`. This project pre-registers its
   bars, so read them before a run, never after it.
 - **The agents.** `spec/agents.md`.
-
-## The rules that the observer set adds
-
-- Export this project's `.env` before any command that reaches Scaleway. The
-  `env` block of the workspace checkout shadows every project key (Workspace
-  D-05).
-- State the clone and the git HEAD that each step read.
-- This project receives the findings of the two pilots. A finding lands in
-  `docs/research/`, and a contradiction becomes a specification change here.
