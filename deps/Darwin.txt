@@ -6,6 +6,10 @@
 # runtime chain reaches the entry.
 tool pkg signify-osx
 
+# The secret gate of make check runs gitleaks, so the tool
+# environment installs it before every other environment.
+tool bin gitleaks https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_{os}_{arch}.tar.gz gitleaks
+
 # The Fugu distribution supplies the harness modules (D7).
 runtime dist https://github.com/FuguBSD/Fugu/releases/latest/download/Fugu.tar.gz
 # The Scaleway CLI operates the infrastructure (spec/infrastructure.md).
