@@ -23,14 +23,25 @@ is the authoritative reference. Research notes live in `docs/research/`.
 
 ```sh
 make setup       # install the development tools into .venv
-make deps        # install the Fugu distribution and the Scaleway CLI
+make deps        # install gitleaks, the Fugu distribution and the CLI
 make check       # lockfile + ruff + spec-check + ste-lint + gitleaks + test
 make format-fix  # format the Python, Markdown, JSON and YAML
 ```
 
 `make check` runs the Markdown format gate, and prettier runs through bunx. The
-operator installs bun and gitleaks, for example from Homebrew. No deps manifest
-provides them.
+operator installs bun, for example from Homebrew. The manifest does not provide
+it, because the format gate needs `bunx` before a target can run.
+
+`make deps` verifies every download. The Fugu release carries a signed `SHA256`
+manifest, and `deps/KEYS.txt` declares the release key of the organization by
+URL and digest. `scripts/deps` fetches that key, holds it to the digest, and
+verifies the manifest with signify(1). `deps/SHA256.txt` records the digest of
+the Scaleway CLI and of gitleaks.
+
+`make deps` also installs gitleaks, the tool of the secret gate. It installs the
+`tool` environment before every other environment, so the gate tool is present
+for each chain. The CI gate installs gitleaks with `make deps`, so one pin
+serves the operator gate and the CI gate.
 
 ## Commit scopes
 
