@@ -10,12 +10,12 @@ agent.
 
 ## The repository is the interface
 
-Each action has a deterministic entry point: a `make` target for each pipeline
-stage, OpenTofu for each cloud resource, version-controlled Axolotl YAML for
-each training run, and a runbook in `docs/runbooks/` for each operational
-sequence. Agents run the same commands as humans. So each action is reproducible
-and auditable, no matter who did it. If a capability has no target, add the
-target. Do not work around it.
+Each action has a deterministic entry point. The points are a `make` target for
+each pipeline stage, and OpenTofu for each cloud resource. The other points are
+version-controlled Axolotl YAML for each training run, and a runbook in
+`docs/runbooks/` for each operational sequence. Agents run the same commands as
+humans. So each action is reproducible and auditable, no matter who did it. If a
+capability has no target, add the target. Do not work around it.
 
 <a id="agt-runtime"></a>
 
@@ -74,10 +74,11 @@ control.
 
 Agents and CI can start GPU instances and metal servers, so cost discipline must
 not rest on a convention. The controls live in the infrastructure specification
-([spend guardrails](infrastructure.md)): the per-Organization quotas, the scoped
-IAM policies, the monthly budget, the billing alerts, the pre-apply forecast
-check, and the idle watchdog. Only the quotas and the IAM policies block. The
-budget and the alerts notify. Two habits therefore remain:
+([spend guardrails](infrastructure.md)). They are the per-Organization quotas,
+the scoped IAM policies, and the monthly budget. The other controls are the
+billing alerts, the pre-apply forecast check, and the idle watchdog. Only the
+quotas and the IAM policies block. The budget and the alerts notify. Two habits
+therefore remain:
 
 - `make infra-status` at the start and at the end of each work session.
 - `make infra-down` before a session ends with no training in flight.
@@ -141,6 +142,6 @@ decisions stay human:
 
 The symmetry is intentional. FuguTTX ships the TTX agent in the boundaries of
 pledge/unveil, doas, and dry-run gates. The development agents that build it
-operate with the same philosophy: least privilege by construction, explicit
-gates before irreversible actions, and an append-only audit trail (git history,
-CI logs, OpenTofu state).
+operate with the same philosophy. The philosophy is least privilege by
+construction, and explicit gates before irreversible actions. It also holds an
+append-only audit trail (git history, CI logs, OpenTofu state).

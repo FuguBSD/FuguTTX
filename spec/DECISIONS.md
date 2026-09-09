@@ -7,13 +7,14 @@ change a decision, change this document first.
 
 ## D1 — Base model: Qwen3-4B (Apache 2.0)
 
-Qwen3-4B is the only current model family with all of these properties: an
-Apache 2.0 license, strong tool-call ability, good C and Perl code ability, long
-context, and full fine-tune ecosystem support. Llama 3.x and Gemma 3 have custom
-licenses that are not OSI-approved. Those licenses do not agree with the
-permissive-only culture of OpenBSD. Those models are excluded. The family line
-has revisions. A re-survey pins the exact revision before any training spend
-([roadmap](ROADMAP.md)). Details: [base model](model.md).
+Qwen3-4B is the only current model family with all of these properties. The
+properties are an Apache 2.0 license, strong tool-call ability, and good C and
+Perl code ability. The other properties are long context and full fine-tune
+ecosystem support. Llama 3.x and Gemma 3 have custom licenses that are not
+OSI-approved. Those licenses do not agree with the permissive-only culture of
+OpenBSD. Those models are excluded. The family line has revisions. A re-survey
+pins the exact revision before any training spend ([roadmap](ROADMAP.md)).
+Details: [base model](model.md).
 
 <a id="d2"></a>
 
@@ -21,10 +22,10 @@ has revisions. A re-survey pins the exact revision before any training spend
 
 The target hardware has no usable GPU path. OpenBSD/arm64 has no kernel driver
 for the Apple GPU, and no Apple Vulkan ICD. The one Apple GPU driver that exists
-anywhere is Rust code in a branch that Asahi Linux rebases, and the OpenBSD
-kernel has no Rust. Token generation would also gain nothing from the GPU of a
-Mac mini M1, because the CPU and the GPU share the same measured 59 to 60 GB/s
-of memory bandwidth.
+anywhere is Rust code in a branch that Asahi Linux rebases. The OpenBSD kernel
+has no Rust. Token generation would also gain nothing from the GPU of a Mac mini
+M1. The CPU and the GPU share the same measured 59 to 60 GB/s of memory
+bandwidth.
 
 This decision is "CPU only on the target hardware". It is not "OpenBSD has no
 GPU path". OpenBSD supports GPU offload on amd64 with an AMD card, through the
@@ -56,19 +57,19 @@ routine `tofu destroy` keep the costs low. Details: [training](training.md),
 CPT carries the primary OpenBSD knowledge of the model, together with the
 vocabulary and the idioms of the project. A model learns a fact only from many
 diverse statements of that fact, and the raw corpus states most facts once.
-Therefore the CPT data is the clean corpus plus a synthetic augmentation of it:
-teacher-written paraphrases, question-and-answer pairs, and fact summaries, each
-grounded in one source chunk ([corpus](corpus.md#synthetic-augmentation)). SFT
-on synthetic agentic traces teaches tool use. A grounded QA slice in the SFT mix
-trains fact recall in the answer format of the agent. Replay data and a low
-learning rate prevent catastrophic forgetting. A Qwen3-32B teacher writes the
-augmentation and proposes the traces. A rollout in a disposable OpenBSD guest
-records each tool result, so no observation in a trace is fabricated. A judge
-filter removes bad traces before use. The judge that grades a release bar is a
-different model family than the teacher ([evaluation](evaluation.md)). Each
-training stage measures against the baseline grid, so training must beat
-retrieval before it ships ([evaluation](evaluation.md)). Details:
-[training](training.md).
+Therefore the CPT data is the clean corpus plus a synthetic augmentation of it.
+The augmentation holds teacher-written paraphrases, question-and-answer pairs,
+and fact summaries, each grounded in one source chunk
+([corpus](corpus.md#synthetic-augmentation)). SFT on synthetic agentic traces
+teaches tool use. A grounded QA slice in the SFT mix trains fact recall in the
+answer format of the agent. Replay data and a low learning rate prevent
+catastrophic forgetting. A Qwen3-32B teacher writes the augmentation and
+proposes the traces. A rollout in a disposable OpenBSD guest records each tool
+result, so no observation in a trace is fabricated. A judge filter removes bad
+traces before use. The judge that grades a release bar is a different model
+family than the teacher ([evaluation](evaluation.md)). Each training stage
+measures against the baseline grid, so training must beat retrieval before it
+ships ([evaluation](evaluation.md)). Details: [training](training.md).
 
 <a id="d5"></a>
 
@@ -156,8 +157,8 @@ and its alerts notify. The pre-apply forecast check and the idle watchdog are
 pipeline code, and they gate.
 
 The development host needs hardware virtualization. Elastic Metal gives it by
-construction. If a one-hour test proves `/dev/kvm` and an OpenBSD guest boot on
-a virtual instance, the cheaper instance can become the host without a new
+construction. A one-hour test can prove `/dev/kvm` and an OpenBSD guest boot on
+a virtual instance. The cheaper instance can then become the host without a new
 decision. The four human decisions of D8 stand. Details:
 [infrastructure](infrastructure.md), [autonomous development](agents.md).
 

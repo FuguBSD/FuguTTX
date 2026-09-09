@@ -1,10 +1,11 @@
 # Roadmap
 
 Work proceeds in vertical slices, between fixed gates. A slice is the smallest
-unit of work that ends in a measurement. This document gives the method: the
-slice rule, the slice kinds, the thinning axes, the rails, the shared artifacts,
-the gates, the order rule, and the cadence. The plan contract is in the
-[index](index.md). Decision [D10](DECISIONS.md#d10) anchors the method.
+unit of work that ends in a measurement. This document gives the method. The
+method holds the slice rule, the slice kinds, the thinning axes, and the rails.
+It also holds the shared artifacts, the gates, the order rule, and the cadence.
+The plan contract is in the [index](index.md). Decision [D10](DECISIONS.md#d10)
+anchors the method.
 
 ## The slice rule
 
@@ -73,12 +74,13 @@ before that slice. Do not build a rail before a slice needs it.
 
 ## Shared artifacts
 
-The system prompt, the tool metadata table and its JSON schemas, the error
-templates, the re-prompt texts, and the scorecard format are the shared
-artifacts. The shared artifacts are the durable contracts between slices. A
-slice can discard implementation code behind an artifact. A slice that changes a
-shared artifact must version the artifact, and must re-run each measurement that
-reads it. Each trace and each scorecard records the artifact version.
+The shared artifacts are the system prompt, the tool metadata table and its JSON
+schemas, and the error templates. The re-prompt texts and the scorecard format
+are also shared artifacts. The shared artifacts are the durable contracts
+between slices. A slice can discard implementation code behind an artifact. A
+slice that changes a shared artifact must version the artifact, and must re-run
+each measurement that reads it. Each trace and each scorecard records the
+artifact version.
 
 ## Gates
 
@@ -95,11 +97,11 @@ gate order is fixed:
 3. **The CPT gate.** The gate opens when the grid holds the C0 row. If C0 − B0
    is small on the domain suites, a human reviews the CPT method before the
    first SFT campaign ([RSK-CPT](risks.md#rsk-cpt)).
-4. **The release gate.** A release requires all of these: every release bar met
-   on the full grid, zero red-team escapes, a green harness smoke suite on the
-   target arm64 hardware (D2), signed artifacts
-   ([LIC-RELEASE](licensing.md#lic-release)), and a register with no `open` or
-   `partial` unit outside [variants](variants.md).
+4. **The release gate.** A release requires all of these. Every release bar must
+   be met on the full grid, with zero red-team escapes. A green harness smoke
+   suite must pass on the target arm64 hardware (D2). The artifacts must be
+   signed ([LIC-RELEASE](licensing.md#lic-release)). The register must hold no
+   `open` or `partial` unit outside [variants](variants.md).
 5. **The variant gate.** The promotion rule decides each variant
    ([VAR-PROMOTE](variants.md#var-promote), D5).
 

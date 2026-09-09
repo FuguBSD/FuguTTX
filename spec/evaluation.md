@@ -75,7 +75,7 @@ Grades come from exact-match and keyword checks, plus an LLM judge.
 
 CPT carries primary knowledge (D4), so this suite is the direct measure of the
 CPT delta, next to perplexity. A near-duplicate check keeps the suite out of the
-training data: the synthetic augmentation and the grounded QA slice drop each
+training data. The synthetic augmentation and the grounded QA slice drop each
 item that matches this suite ([corpus](corpus.md#synthetic-augmentation)).
 
 **The release judge and the teacher must be different model families.** TTX 1

@@ -109,7 +109,7 @@ Validation, on each push, with no cloud credentials:
   backticks). The dependency check permits a base-module import and a module of
   the Fugu distribution ([D7](DECISIONS.md#d7)), and it refuses each other
   module. The manifest of the installed distribution names that module set,
-  across the `Fugu::` and `Protocol::` namespaces, so the check holds no list of
+  across the `Fugu::` and `Protocol::` namespaces. The check holds no list of
   its own. CI installs the Fugu distribution through `scripts/deps`, and it
   installs no other CPAN module. A harness test that reaches an optional CPAN
   feature of a Fugu module therefore fails on the runner with a missing module.

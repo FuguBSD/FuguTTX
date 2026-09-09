@@ -16,11 +16,11 @@ possible — by design, not by policy.
 
 A sysadmin agent feeds logs, configuration files, and `dmesg` output back into
 the model context as tool results. An attacker can influence that text, and an
-injected instruction can steer the next tool call. Mitigations: the fixed tool
-table bounds what a steered model can request; the parent applies every gate,
-whatever the model claims; a mutation needs a dry run and a human confirmation
-([harness](harness.md)). No surveyed harness fences tool output toward the
-model, so no proven pattern exists
+injected instruction can steer the next tool call. There are three mitigations.
+The fixed tool table bounds what a steered model can request. The parent applies
+every gate, whatever the model claims. A mutation needs a dry run and a human
+confirmation ([harness](harness.md)). No surveyed harness fences tool output
+toward the model, so no proven pattern exists
 ([research](../docs/research/harness-loops/index.md)). The residual risk stands.
 The safety red team must include injected-observation scenarios
 ([evaluation](evaluation.md)).
@@ -51,14 +51,14 @@ scenarios, the grading, and the parallel driver only.
 CPT must carry the primary knowledge of the model (D4), and two effects work
 against that. A model learns a fact only from many diverse statements of the
 fact, and low-rank adapters learn less than a full fine-tune. The first
-mitigation is in the method: the synthetic augmentation multiplies the
-statements of each fact ([corpus](corpus.md#synthetic-augmentation)), and the
+mitigation is in the method. The synthetic augmentation multiplies the
+statements of each fact ([corpus](corpus.md#synthetic-augmentation)). The
 grounded QA slice trains recall in the answer format of the agent. The
 [baseline grid](evaluation.md#baselines-and-ablations) measures the CPT delta
-directly, on perplexity and on the OpenBSD QA set, and the retrieval baseline
-bounds the value of training. If the delta is small, the recorded escalations
-are: a larger augmentation multiple, a higher adapter rank, or a full-parameter
-CPT run. Each escalation fits one H100 at the 4B size. A human must review the
+directly, on perplexity and on the OpenBSD QA set. The retrieval baseline bounds
+the value of training. If the delta is small, the recorded escalations are: a
+larger augmentation multiple, a higher adapter rank, or a full-parameter CPT
+run. Each escalation fits one H100 at the 4B size. A human must review the
 method ([evaluation](evaluation.md#baselines-and-ablations)).
 
 <a id="rsk-synth"></a>

@@ -53,10 +53,10 @@ reach a training manifest.
 CPT carries the primary knowledge of the model (D4), and a model learns a fact
 only from many diverse statements of that fact. The raw corpus states most facts
 once. Therefore the Qwen3-32B teacher rewrites the prose components of the clean
-corpus — the man pages, the FAQ/www, and the commit logs — into paraphrases,
-question-and-answer pairs, and fact summaries
-([training](training.md#augmentation-generation)). The code trees are not
-augmented. Code trains in its raw form.
+corpus into paraphrases, question-and-answer pairs, and fact summaries
+([training](training.md#augmentation-generation)). The prose components are the
+man pages, the FAQ/www, and the commit logs. The code trees are not augmented.
+Code trains in its raw form.
 
 The grounded QA slice of the SFT pass ([training](training.md#sft-pass)) is
 generated in the same way, and it follows the same rules.
@@ -72,7 +72,7 @@ These rules govern the augmentation:
   ([evaluation](evaluation.md#domain-knowledge)).
 - An evaluation item must not enter a training manifest. A near-duplicate check
   compares the augmentation and the grounded QA slice against the OpenBSD QA
-  set, and it drops each match from the training data.
+  set. It drops each match from the training data.
 - Qwen3-32B has an Apache 2.0 license, with no restriction on its output. So
   each record shares the clean lane of its source chunk.
 - The augmentation set is a training source. It gets a dataset card
@@ -145,8 +145,8 @@ exact tree state.
 ## Pipeline stages
 
 1. Fetch and synchronize the mirrors, and pin one commit per mirror.
-2. Extract and normalize: render the man pages with mandoc, convert HTML to
-   text, walk the code trees, extract one record per commit from each log.
+2. Extract and normalize. Render the man pages with mandoc, and convert HTML to
+   text. Walk the code trees, and extract one record per commit from each log.
 3. Clean and chunk: remove license headers, remove near-duplicates, drop each
    commit message below a documented length floor.
 4. Tag each chunk with its source and its license class.

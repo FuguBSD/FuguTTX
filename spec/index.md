@@ -41,8 +41,8 @@ contract, the ID conventions, and the document tables.
 - A slice plan also states the slice kind, the thinning axes, and the
   measurement that ends the slice. An experiment-slice plan adds the hypothesis
   and the cost cap.
-- The change that implements a unit, or a part of a unit, must set the state of
-  the unit in [STATUS.md](STATUS.md) in the same change.
+- The change that implements a unit, or a part of one, must set the unit state
+  in [STATUS.md](STATUS.md) in the same change.
 
 <a id="conventions"></a>
 

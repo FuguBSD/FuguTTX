@@ -31,7 +31,7 @@ server carries no hypervisor, so KVM needs no extra setting.
 One test can change the host type ([decisions](DECISIONS.md), D9). Before the
 first `infra/dev` apply, run one virtual instance for one hour: check
 `/dev/kvm`, and boot one OpenBSD guest under qemu. A matched virtual instance
-costs less than the metal offer: `GP1-M`, with 16 vCPU and 64 GiB, was EUR
+costs less than the metal offer. `GP1-M`, with 16 vCPU and 64 GiB, was EUR
 279.97 per month, read 2026-06-23, against EUR 400.04. If both checks pass, the
 virtual instance becomes the development host. Record the result in the
 bootstrap runbook.
@@ -185,8 +185,8 @@ register a self-hosted runner. Use SSH from a GitHub-hosted runner instead.
 - **IAC-DEV-3** — The guest architecture of the suite is amd64, and the `fuguvm`
   tool must select the KVM accelerator on this host. A guest that falls back to
   software emulation fails the target.
-- **IAC-DEV-4** — The `.fuguvmrc` of this host names the pinned qemu version,
-  and the tool must refuse a guest under an other version, with exit code 3. The
+- **IAC-DEV-4** — The `.fuguvmrc` of this host names the pinned qemu version.
+  The tool must refuse a guest under an other version, with exit code 3. The
   directive is optional, and a guest with no directive runs no check. The image
   build of [IAC-IMAGE](#iac-image) runs on a CI runner with an other qemu
   version, so its guest carries no version directive.
@@ -200,7 +200,7 @@ waste. Two lifecycle rules bound it:
 - A metal host stays long-lived for one reason only: a re-order can fail on
   stock. If the KVM test passes and a virtual instance becomes the host
   ([decisions](DECISIONS.md), D9), the host becomes ephemeral, like the train
-  stack: `make infra-up STACK=dev` before a work session, and
+  stack. The operator runs `make infra-up STACK=dev` before a work session, and
   `make infra-down STACK=dev` after. A virtual instance re-creates in minutes,
   and the host holds no durable state, so the cycle loses nothing. The monthly
   reinstall schedule then retires.
@@ -301,7 +301,7 @@ Two routes exist for a project-built image.
 Prefer a virtual Instance. An Instance has a serial console; Elastic Metal has
 none. An Elastic Metal server needs `install_config_afterward = true`, because
 the OS list holds no OpenBSD identifier. Do not plan an interactive install. The
-KVM-over-IP console is a paid option, it is not available on each offer, it
+KVM-over-IP console is a paid option, and it is not available on each offer. It
 expires after 48 hours, and a browser must drive it.
 
 A project-built image must meet each requirement.

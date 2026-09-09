@@ -33,7 +33,7 @@ The base model must have all of these properties:
 "Qwen3-4B" names a family line, and the line has revisions. The 2507 refresh
 split the hybrid model into two revisions: Qwen3-4B-Instruct-2507 and
 Qwen3-4B-Thinking-2507, both Apache 2.0. The Instruct revision is natively
-non-thinking, it raises the context length, and it reports stronger agentic and
+non-thinking, and it raises the context length. It reports stronger agentic and
 tool-call scores than the original hybrid in non-thinking mode. That is exactly
 the TTX 1 configuration, so **Qwen3-4B-Instruct-2507 is the leading candidate
 revision**.

@@ -13,10 +13,10 @@ mips64, mips64el, powerpc, powerpc64, riscv64, and sparc64. Dependencies:
 `devel/libggml`, `net/curl`, `cmake`, `ninja`. Upstream has the MIT license,
 with `PERMIT_PACKAGE = Yes`.
 
-`llama-server` serves the agent with three settings that the harness requires:
-the JSON-schema/grammar constraint on tool calls, prompt caching for a
-byte-stable prefix, and context shift off. The [harness](harness.md) states the
-reasons.
+`llama-server` serves the agent with three settings that the harness requires.
+The settings are the JSON-schema/grammar constraint on tool calls, prompt
+caching for a byte-stable prefix, and context shift off. The
+[harness](harness.md) states the reasons.
 
 `devel/libggml` sets `-DGGML_VULKAN=on` for amd64 and aarch64. The aarch64
 package therefore installs a Vulkan back end, `libggml-vulkan.so`. On Apple
@@ -61,7 +61,7 @@ target hardware. FuguTTX publishes the results.
 
 Token generation reads all weights for each token. Memory bandwidth therefore
 sets a hard ceiling. A STREAM measurement gives the Apple M1 CPU 59 GB/s and the
-M1 GPU 60 GB/s, which is about 85 percent of the 67 GB/s specification peak
+M1 GPU 60 GB/s. That is about 85 percent of the 67 GB/s specification peak
 ([arXiv 2502.05317](https://arxiv.org/html/2502.05317v1), 7 February 2025). A
 2.5 GB Q4_K_M file therefore has a ceiling of 23.6 tokens/s on an M1. The
 ceiling is the same for the CPU and for the GPU, because the two engines share

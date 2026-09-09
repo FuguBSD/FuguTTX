@@ -18,9 +18,9 @@ This split gives privilege separation in two directions. The model can reach
 `doas` only through the fixed protocol of the executor. The operator account
 holds no doas rules, and it cannot run the privileged commands directly.
 
-The `ttx` command line comes from `Fugu::CLI`: the subcommand dispatch, the
-option parsing, the help text, and the shared exit codes 0, 1, 2, 3 and 7. An
-exit code that belongs to FuguTTX starts above those.
+The `ttx` command line comes from `Fugu::CLI`. It takes the subcommand dispatch,
+the option parsing, the help text, and the shared exit codes 0, 1, 2, 3 and 7.
+An exit code that belongs to FuguTTX starts above those.
 
 <a id="hrn-lang"></a>
 
@@ -31,10 +31,10 @@ against libc alone (see [Safety design](#safety-design)). Decision
 [D7](DECISIONS.md) sets the rule: Perl on the unprivileged side of doas, C on
 the privileged side. The C never faces the model. The Perl never runs as root.
 
-The Perl harness uses the modules from base: `HTTP::Tiny` for the local
-llama-server API, `JSON::PP` for tool-call parsing, `Digest::SHA` for the
-confirmation digest, and `Socket` for the control socket. Three more base
-modules arrive through a Fugu module. `Fugu::Sandbox` calls
+The Perl harness uses the modules from base. It uses `HTTP::Tiny` for the local
+llama-server API, and `JSON::PP` for tool-call parsing. It uses `Digest::SHA`
+for the confirmation digest, and `Socket` for the control socket. Three more
+base modules arrive through a Fugu module. `Fugu::Sandbox` calls
 `OpenBSD::Pledge(3p)` and `OpenBSD::Unveil(3p)` for the sandbox
 ([HRN-SAFE-PLEDGE](#hrn-safe-pledge)). `Fugu::Log` calls `Sys::Syslog` for the
 audit duplicate ([HRN-SAFE-AUDIT](#hrn-safe-audit)). The Fugu modules come from
@@ -80,7 +80,7 @@ the CI check enforces them:
   it.
 - Load and exercise every module before the process pledges. A lazy `require`
   after `pledge(2)` needs `rpath`. Its absence kills the process with `SIGABRT`.
-  A compile-time load is not enough: some Fugu methods run a lazy `require` at
+  A compile-time load is not enough. Some Fugu methods run a lazy `require` at
   call time, so the harness must not reach one after the pledge call.
 
 <a id="hrn-arch"></a>
@@ -134,11 +134,11 @@ parses untrusted input must not hold `exec`**. Model output is untrusted input.
 - **The parent** holds the tool policy, executes each command, and writes the
   session transcript (see [session transcript](#session-transcript)). It never
   sees raw model output. It parses only the fixed internal record format, which
-  the harness itself defines. The unveil row is a complete enumeration: it names
-  each diagnostic binary the parent can run without doas, the doas wrappers,
-  `diff(1)`, the candidate directory it writes, the log directory, and the
-  `ttxd` binary it re-executes to respawn a child. The enumeration takes the
-  perl library directories from `Fugu::Sandbox->perl_lib_dirs`. It takes the
+  the harness itself defines. The unveil row is a complete enumeration. It names
+  each diagnostic binary the parent can run without doas, the doas wrappers, and
+  `diff(1)`. It also names the candidate directory it writes, the log directory,
+  and the `ttxd` binary it re-executes to respawn a child. The enumeration takes
+  the perl library directories from `Fugu::Sandbox->perl_lib_dirs`. It takes the
   read-only system inventory from `Fugu::Sandbox->system_paths`, and `/etc`
   already covers each entry of that inventory except `/dev/urandom`. The parent
   execs its own program to start each child, so each child needs the library
@@ -152,17 +152,17 @@ parses untrusted input must not hold `exec`**. Model output is untrusted input.
   with `JSON::PP`. It reduces each valid tool call to a fixed internal record
   for the parent. It opens one persistent HTTP/1.1 connection to `127.0.0.1`
   during setup, and it then pledges `stdio` only. It holds no `inet` promise
-  after setup, because `pledge(2)` cannot restrict a destination address, and
-  the one process that parses hostile model output must not reach the network.
+  after setup, because `pledge(2)` cannot restrict a destination address. The
+  one process that parses hostile model output must not reach the network.
   `HTTP::Tiny` opens a socket for each request, so the model process must not
-  use it after the pledge; it speaks HTTP/1.1 over the one persistent connection
-  itself. When the connection ends, the model process exits, and the parent
-  respawns it. The parent treats an abnormal child exit as the respawn trigger.
-  The model process has no file system view and no `exec`. An exploited parser
-  bug lands in a process that can do nothing and can reach nothing. The model
-  process appends each raw request and each raw response to the wire log,
-  through a descriptor that it inherits from the parent (see
-  [session transcript](#session-transcript)).
+  use it after the pledge. The model process speaks HTTP/1.1 over the one
+  persistent connection itself. When the connection ends, the model process
+  exits, and the parent respawns it. The parent treats an abnormal child exit as
+  the respawn trigger. The model process has no file system view and no `exec`.
+  An exploited parser bug lands in a process that can do nothing and can reach
+  nothing. The model process appends each raw request and each raw response to
+  the wire log. It writes through a descriptor that it inherits from the parent
+  (see [session transcript](#session-transcript)).
 - **The frontend process** owns the control socket and the operator session. It
   relays prompts, output, liveness events, and confirmations between the client
   and the parent (see [Liveness](#liveness)).
@@ -174,7 +174,7 @@ Base Perl cannot pass a file descriptor over a socket. The core `Socket` module
 wraps neither `sendmsg(2)` nor `recvmsg(2)`, so `SCM_RIGHTS` is not expressible
 in base Perl. The harness therefore does not pass descriptors. The parent
 creates each `socketpair(2)` before the fork, and the child inherits its end
-across `exec`. Perl sets close-on-exec on each descriptor above `$^F`, so the
+across `exec`. Perl sets close-on-exec on each descriptor above `$^F`. The
 parent must clear `FD_CLOEXEC` on the child end before `exec`, or move the
 descriptor below file descriptor 3. No pledge set holds `sendfd` or `recvfd`.
 The frontend relays bytes, not descriptors.
@@ -392,10 +392,10 @@ Five rules control the loop:
   `report` tool. So each step ends with a report.
 - **HRN-LOOP-5 — Errors divide into two classes.** A harness or transport
   failure is fatal: the step stops, and the operator sees the error. Model
-  misbehavior — a malformed call, an unknown tool, invalid arguments, an empty
-  response, a repeated call — becomes a tool result with precise error text, and
-  it spends budget from the failure table. Model misbehavior must not crash the
-  loop.
+  misbehavior becomes a tool result with precise error text, and it spends
+  budget from the failure table. Such misbehavior is a malformed call, an
+  unknown tool, invalid arguments, an empty response, or a repeated call. Model
+  misbehavior must not crash the loop.
 
 <a id="hrn-cancel"></a>
 
@@ -416,12 +416,12 @@ abort mechanism for an in-flight model generation.
 ### Liveness
 
 CPU generation is slow, and the harness does not stream tokens. The frontend
-therefore relays one coarse event per loop stage to the client: model call
-started, tool started (with the tool name), and confirmation pending. These
-events are transient. They do not enter the transcript. The client shows each
-event through the `Fugu::REPL` module ([HRN-REPL](#hrn-repl)). The module writes
-a transient status line, and it then restores the prompt line and the cursor. An
-event text must not enter the input history.
+therefore relays one coarse event per loop stage to the client. The events are
+model call started, tool started (with the tool name), and confirmation pending.
+These events are transient. They do not enter the transcript. The client shows
+each event through the `Fugu::REPL` module ([HRN-REPL](#hrn-repl)). The module
+writes a transient status line, and it then restores the prompt line and the
+cursor. An event text must not enter the input history.
 
 <a id="hrn-invoke"></a>
 
@@ -457,10 +457,10 @@ stream.
 
 ## Prompt assembly
 
-The harness assembles the prompt from a fixed chunk order: the system prompt,
-the operator instruction file, the skill list, and the messages that derive from
-the transcript. A fixed order maximizes prefix-cache reuse. The skill list comes
-from the skills mechanism ([HRN-SKILLS](#hrn-skills)).
+The harness assembles the prompt from a fixed chunk order. The order is the
+system prompt, the operator instruction file, the skill list, and the messages
+that derive from the transcript. A fixed order maximizes prefix-cache reuse. The
+skill list comes from the skills mechanism ([HRN-SKILLS](#hrn-skills)).
 
 - **HRN-PROMPT-1 — System prompt.** At most 700 tokens: the agent identity, one
   line per tool from the tool metadata table, and the loop rules.
@@ -604,9 +604,9 @@ old files safely. This specification does not fix the append discipline.
   monotonic ordinal, a type, and a payload. Ordinals are strictly consecutive. A
   gap or a malformed line fails the load, loudly.
 - **Record types.** Session meta (format version, peer user id), operator
-  prompt, model response (with usage counts and finish reason), tool call, tool
-  result (with exit status and output), confirmation (peer user id and digest),
-  elision, summary, error, and session end.
+  prompt, and model response (with usage counts and finish reason). Tool call,
+  tool result (with exit status and output), and confirmation (peer user id and
+  digest). Elision, summary, error, and session end.
 - **Persistence policy.** Turn boundaries, model-visible content, tool calls,
   executed commands, exit statuses, confirmations, and usage counts persist.
   Transient progress events go to the client only.
@@ -667,9 +667,9 @@ Safety is first-class, not optional.
 
   Each privileged mutation therefore has a fixed-function C wrapper, for example
   `/usr/local/libexec/ttx/pkg-add`. The wrapper validates its one argument
-  against a strict pattern, rejects flags and URLs, pledges, and calls
-  `execv(3)` on the real tool with a fixed argument template. The doas rule
-  permits the wrapper and omits the `args` clause, so the argument passes
+  against a strict pattern, and it rejects flags and URLs. It pledges, and it
+  calls `execv(3)` on the real tool with a fixed argument template. The doas
+  rule permits the wrapper and omits the `args` clause. The argument passes
   through to the wrapper, and the wrapper holds the policy.
 
   ```
@@ -698,7 +698,7 @@ Safety is first-class, not optional.
   [HRN-PKG](#hrn-pkg) covers it. A record that reaches `syslogd(8)` sits in a
   different privilege domain, and `syslogd` can forward it to a remote host. A
   compromised `_ttx` parent can still forge a future record, and it can stop
-  logging, but it cannot rewrite a record that already left the host.
+  logging. It cannot rewrite a record that already left the host.
 
 - <a id="hrn-safe-confid"></a>**Audit confidentiality.** The audit content can
   hold a secret: a `pf` diff, a WireGuard key, or a sysctl value. The transcript

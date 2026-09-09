@@ -62,7 +62,7 @@ doas wrappers, the candidate directory and the log directory.
 
 The map is not a bound. D7 permits any module of the distribution, so a slice
 can adopt an other module when a unit needs it. The harness keeps its own frame
-code (HRN-LANG) and its own privilege drop (HRN-SAFE-DROP), so an adoption of
+code (HRN-LANG) and its own privilege drop (HRN-SAFE-DROP). An adoption of
 `Fugu::Control`, `Protocol::Imsg` or `Fugu::Privdrop` needs a change to those
 units first.
 
@@ -99,8 +99,8 @@ The CI checks of REP-CI hold these rules:
   installed Fugu distribution supplies, and it must refuse each other module.
 - A harness test must run under `perl -T`, and it must load each adopted module
   before the pledge.
-- CI installs no CPAN module beyond the Fugu distribution, so a test that
-  reaches an optional CPAN feature of a Fugu module fails on the runner.
+- CI installs no CPAN module beyond the Fugu distribution. A test that reaches
+  an optional CPAN feature of a Fugu module fails on the runner.
 - A test can call `Fugu::Sandbox->is_supported` to tell enforcement from
   emulation.
 
@@ -113,6 +113,6 @@ The CI checks of REP-CI hold these rules:
    program.
 2. **Which minimum p5-Fugu version does the port name?** Fugu derives its
    version from its latest `v*` tag. The minimum version must cover each adopted
-   module, the `env` argument of `Fugu::Process`, the native syslog pin of
-   `Fugu::Log`, and the process-group form of `Fugu::Process->terminate`
-   (HRN-PKG).
+   module, and the `env` argument of `Fugu::Process`. It must also cover the
+   native syslog pin of `Fugu::Log`, and the process-group form of
+   `Fugu::Process->terminate` (HRN-PKG).

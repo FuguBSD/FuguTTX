@@ -24,11 +24,11 @@ design, nothing durable lives on the instance.
 
 **The H100-1-80G is the standard training instance.** It is the default in the
 OpenTofu train stack. 80 GB holds a 4B or 8B model plus the QLoRA optimizer
-state at long context, with a large margin. Public reference points: an 8B QLoRA
-run of 2 epochs completes in approximately 3–6 hours on one high-end GPU; a 7B
-QLoRA run peaks below 8 GiB of VRAM. The `instance_type` variable exposes the
-L40S-1-48G for budget runs at 4B. QLoRA on one H100 covers the full range up to
-14B. Multi-GPU is not necessary.
+state at long context, with a large margin. There are two public reference
+points. An 8B QLoRA run of 2 epochs completes in approximately 3–6 hours on one
+high-end GPU. A 7B QLoRA run peaks below 8 GiB of VRAM. The `instance_type`
+variable exposes the L40S-1-48G for budget runs at 4B. QLoRA on one H100 covers
+the full range up to 14B. Multi-GPU is not necessary.
 
 ## Method
 
@@ -67,10 +67,11 @@ Supervised fine-tuning from the CPT checkpoint, on two data kinds:
 
 - Synthetic agentic traces: `pf.conf` debug, `pkg_add` workflows, `sysctl`
   adjustment, `rcctl` service management.
-- A grounded QA slice: single-turn question-and-answer items, generated from the
-  man pages and the FAQ with the source chunk in the prompt, under the
-  augmentation rules ([corpus](corpus.md#synthetic-augmentation)). The slice
-  trains fact recall in the answer format of the agent.
+- A grounded QA slice: single-turn question-and-answer items. The pipeline
+  generates them from the man pages and the FAQ, with the source chunk in the
+  prompt, under the augmentation rules
+  ([corpus](corpus.md#synthetic-augmentation)). The slice trains fact recall in
+  the answer format of the agent.
 
 The corpus components that seed the scenarios of each variant are specified in
 the [corpus](corpus.md#corpus-use-per-variant).
@@ -94,7 +95,7 @@ of the guest. A teacher-written observation must not enter a trace. A trace with
 a fabricated observation teaches the model to expect fabricated systems. The
 driver reaches the teacher over an SSH tunnel to the train instance, and the
 vLLM endpoint binds to localhost on that instance. A trace enters the training
-set only when both checks pass: the scenario check passes in the guest, and the
+set only when both checks pass. The scenario check passes in the guest, and the
 judge filter accepts the trace.
 
 The driver operates the guest with the `fuguvm` command. It copies the harness
