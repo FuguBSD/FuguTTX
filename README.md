@@ -19,7 +19,3 @@ make check       # run every gate; run it before each commit
 make test        # run the test suite
 make format-fix  # fix the Python, Markdown, JSON and YAML formatting
 ```
-
-## Commit scopes
-
-`spec`, `docs`, `harness`, `corpus`, `train`, `eval`, `infra`, `ci`.
