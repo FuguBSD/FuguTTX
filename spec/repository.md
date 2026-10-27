@@ -114,10 +114,10 @@ Validation, on each push, with no cloud credentials:
   installs no other CPAN module. A harness test that reaches an optional CPAN
   feature of a Fugu module therefore fails on the runner with a missing module.
   That failure enforces the optional-feature rule of D7. `prove` runs with the
-  real modules ([harness](harness.md#hrn-repl)). The harness reaches pledge(2)
-  and unveil(2) through `Fugu::Sandbox`, which restricts nothing off OpenBSD and
-  returns success, so `perl -c` and `prove` run on any runner. The OpenBSD
-  guests of the development host verify the enforcement.
+  real modules ([harness](harness-repl.md#hrn-repl)). The harness reaches
+  pledge(2) and unveil(2) through `Fugu::Sandbox`, which restricts nothing off
+  OpenBSD and returns success, so `perl -c` and `prove` run on any runner. The
+  OpenBSD guests of the development host verify the enforcement.
 - doas wrappers: compile with the base toolchain, and `lint`.
 - Infrastructure: `tofu fmt -check` and `tofu validate`.
 - Training: Axolotl configuration validation.

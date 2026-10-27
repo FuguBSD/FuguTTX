@@ -66,7 +66,7 @@ A rail is an invariant. A slice must not thin a rail. These are the rails:
   [infra/CLAUDE.md](../infra/CLAUDE.md)).
 - The spend guardrails (D9, [IAC-SPEND](infrastructure.md#iac-spend)).
 - The dry-run and confirmation gates, in every loop that a model drives
-  ([HRN-SAFE-DRYRUN](harness.md#hrn-safe-dryrun)).
+  ([HRN-SAFE-DRYRUN](harness-safety.md#hrn-safe-dryrun)).
 - The pre-registration of the release bars ([EVL-BARS](evaluation.md#evl-bars)).
 
 Build a rail just in time: in the first slice that can violate the invariant, or

@@ -30,14 +30,14 @@ git, `make`, uv (Python 3.12), OpenTofu, Perl with `prove`, qemu with KVM,
 llama.cpp, and the `scw` CLI. The host must pin an exact qemu version. A
 bootable OpenBSD qemu image with snapshot support must be available on the host.
 The `infra/image` stack produces that image and stores it in the artifacts
-bucket ([infrastructure](infrastructure.md)). The Perl harness and the agentic
-evaluation suite operate correctly only on OpenBSD. CI reinstalls the host in
-place each month, and the host holds no durable state.
+bucket ([infrastructure](infrastructure-stacks.md#iac-image)). The Perl harness
+and the agentic evaluation suite operate correctly only on OpenBSD. CI
+reinstalls the host in place each month, and the host holds no durable state.
 
 - **AGT-RUNTIME-1** — The host operates each OpenBSD guest with the `fuguvm`
   tool. One `.fuguvmrc` of the repository declares each guest. The tool must run
   as a command, and the repository must not load an `App::FuguVM` module.
-  [IAC-DEV](infrastructure.md#iac-dev) states the guest architecture, the
+  [IAC-DEV](infrastructure-stacks.md#iac-dev) states the guest architecture, the
   accelerator, the host ports and the qemu version gate.
 
 Long work — training campaigns, corpus builds, evaluation sweeps — must continue
@@ -62,8 +62,8 @@ repository. Each credential has the minimum scope for its capability:
 
 The operator application applies `infra/persistent`, which declares the IAM
 objects. A human holds its key, and a protected manual workflow dispatch is the
-only CI route to it ([infrastructure](infrastructure.md)). So the pipeline
-credential cannot widen its own scope.
+only CI route to it ([infrastructure](infrastructure-stacks.md#iac-persist)). So
+the pipeline credential cannot widen its own scope.
 
 IAM cannot grant access to one bucket. A bucket policy is the only per-bucket
 control.

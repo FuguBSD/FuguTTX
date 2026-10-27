@@ -22,9 +22,9 @@ with the same scorecard format:
 | T1  | TTX 1, with the `man` retrieval tool                 | The first SFT campaign                       |
 
 The retrieval baseline (B1) adds one read-only tool: `man`, which renders one
-page by name and section ([harness](harness.md)). No other row changes between
-B0 and B1. The grid isolates what each stage adds: retrieval (B1 − B0), CPT (C0
-− B0), and SFT (T0 − C0).
+page by name and section ([harness](harness-tools.md#hrn-tool-ro)). No other row
+changes between B0 and B1. The grid isolates what each stage adds: retrieval (B1
+− B0), CPT (C0 − B0), and SFT (T0 − C0).
 
 Two rules act on the grid:
 
@@ -107,7 +107,7 @@ The suite operates each guest with the `fuguvm` command, as a tool. It links to
 no FuguVM module. Between two scenarios it runs `fuguvm stop`, then
 `fuguvm snapshot restore`, then `fuguvm start`. The suite reads each exit code,
 as [REP-RECIPES](repository.md#rep-recipes) states. The guest image comes from
-the image stack ([IAC-IMAGE](infrastructure.md#iac-image)).
+the image stack ([IAC-IMAGE](infrastructure-stacks.md#iac-image)).
 
 <a id="evl-calls"></a>
 
@@ -120,9 +120,9 @@ generation is schema-constrained and judge-filtered ([training](training.md)).
 
 The suite also measures the loop-guard rates end to end: empty responses,
 identical consecutive calls, and length-stop truncations. The
-[failure budgets](harness.md#failure-budgets) of the harness take their final
-values from these measurements. The suite validates the sampler settings on the
-same runs.
+[failure budgets](harness-loop.md#failure-budgets) of the harness take their
+final values from these measurements. The suite validates the sampler settings
+on the same runs.
 
 <a id="evl-redteam"></a>
 
@@ -148,16 +148,16 @@ before each attempt. It discards a damaged guest with the `fuguvm destroy` verb.
   a campaign provisions an ephemeral GPU instance for the judge, and destroys it
   after the sweep.
 - The agentic task suite and the harness tests run on the development host
-  ([infrastructure](infrastructure.md)): OpenBSD guests under qemu with KVM,
-  with scenarios in parallel. A smoke-scale subset can run in CI, on each pull
-  request.
+  ([infrastructure](infrastructure-stacks.md#iac-dev)): OpenBSD guests under
+  qemu with KVM, with scenarios in parallel. A smoke-scale subset can run in CI,
+  on each pull request.
 - Performance benchmarks run on the target hardware only
   ([inference](inference.md)). A number from an amd64 server does not substitute
   for the published Mac mini numbers.
 - Each scorecard records the model version, the suite version, and a hardware
   profile identifier. Scorecards accumulate in the artifacts bucket, under a
-  versioned prefix ([infrastructure](infrastructure.md)). Do not compare results
-  across hardware profiles.
+  versioned prefix ([infrastructure](infrastructure-stacks.md#iac-persist)). Do
+  not compare results across hardware profiles.
 - The suite runs OpenBSD/amd64 guests, because no Scaleway offer gives a native
   arm64 OpenBSD host ([infrastructure](infrastructure.md)). An arm64-only
   harness fault escapes the suite. Before a release, the harness smoke suite
@@ -168,8 +168,8 @@ before each attempt. It discards a damaged guest with the `fuguvm destroy` verb.
 - **EVL-RUNS-1** — The suite operates each OpenBSD guest with the `fuguvm`
   command. The suite must prove hardware acceleration before it grades a
   scenario, because an emulated guest is too slow.
-  [IAC-DEV](infrastructure.md#iac-dev) states the guest architecture and the
-  accelerator.
+  [IAC-DEV](infrastructure-stacks.md#iac-dev) states the guest architecture and
+  the accelerator.
 - **EVL-RUNS-2** — One guest serves one scenario at a time, and the suite runs
-  several named guests together. [IAC-DEV](infrastructure.md#iac-dev) states the
-  host ports and the shared image cache.
+  several named guests together. [IAC-DEV](infrastructure-stacks.md#iac-dev)
+  states the host ports and the shared image cache.

@@ -89,14 +89,14 @@ context budget.
 
 **The teacher proposes, and a rollout executes.** The rollout driver runs on the
 development host. It rolls each trace out against a disposable OpenBSD guest,
-through the agent loop of the harness ([harness](harness.md#hrn-loop)), with a
-snapshot restore between traces. Each tool result in a trace is the real output
-of the guest. A teacher-written observation must not enter a trace. A trace with
-a fabricated observation teaches the model to expect fabricated systems. The
-driver reaches the teacher over an SSH tunnel to the train instance, and the
-vLLM endpoint binds to localhost on that instance. A trace enters the training
-set only when both checks pass. The scenario check passes in the guest, and the
-judge filter accepts the trace.
+through the agent loop of the harness ([harness](harness-loop.md#hrn-loop)),
+with a snapshot restore between traces. Each tool result in a trace is the real
+output of the guest. A teacher-written observation must not enter a trace. A
+trace with a fabricated observation teaches the model to expect fabricated
+systems. The driver reaches the teacher over an SSH tunnel to the train
+instance, and the vLLM endpoint binds to localhost on that instance. A trace
+enters the training set only when both checks pass. The scenario check passes in
+the guest, and the judge filter accepts the trace.
 
 The driver operates the guest with the `fuguvm` command. It copies the harness
 slice and the scenarios into the guest, and it copies each transcript out. It
@@ -107,9 +107,10 @@ two traces.
 The harness format and the training format must not drift. The system prompt,
 the tool schemas, the error templates, and the re-prompt texts are shared
 artifacts, defined once in the repository. `ttx-synth` must read them from the
-same source as the harness ([harness](harness.md)). Each trace must end its step
-with the terminal `report` tool. The trace set must include recovery examples: a
-malformed call, its precise error result, and the corrected call.
+same source as the harness ([harness](harness-loop.md#hrn-prompt)). Each trace
+must end its step with the terminal `report` tool. The trace set must include
+recovery examples: a malformed call, its precise error result, and the corrected
+call.
 
 <a id="trn-exec"></a>
 

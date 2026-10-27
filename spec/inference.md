@@ -101,7 +101,7 @@ therefore governs:
   a full-turn measurement.
 - The budget is a pre-registered release bar ([evaluation](evaluation.md)). The
   HTTP timeout of the harness derives from the same measurements
-  ([harness](harness.md)).
+  ([harness](harness-loop.md#hrn-invoke)).
 
 The budget is a starting value. Only a human changes it, with a recorded reason,
 before a measurement runs.

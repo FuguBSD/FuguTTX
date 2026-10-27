@@ -6,9 +6,9 @@
 
 A 4B model can give a wrong `pfctl`, `pkg_delete`, or `sysctl` command, with
 confidence. Mitigations: mandatory dry-run and confirmation gates, per-command
-doas rules, pledge/unveil, and the safety red team ([harness](harness.md),
-[evaluation](evaluation.md)). Unattended execution of destructive actions is not
-possible — by design, not by policy.
+doas rules, pledge/unveil, and the safety red team
+([harness](harness-safety.md), [evaluation](evaluation.md)). Unattended
+execution of destructive actions is not possible — by design, not by policy.
 
 <a id="rsk-inject"></a>
 

@@ -82,20 +82,25 @@ unit, and the unit ID is the anchor in upper case:
 Each document specifies one area of work. The code of a document prefixes the
 IDs of its units.
 
-| Code | Document                               | Area                                                             |
-| ---- | -------------------------------------- | ---------------------------------------------------------------- |
-| HRN  | [harness.md](harness.md)               | The Perl harness on OpenBSD and its safety design                |
-| IAC  | [infrastructure.md](infrastructure.md) | Scaleway resources as OpenTofu code                              |
-| COR  | [corpus.md](corpus.md)                 | Data sources, license lanes, augmentation, and the data pipeline |
-| TRN  | [training.md](training.md)             | CPT, SFT, trace generation, and the compute budget               |
-| EVL  | [evaluation.md](evaluation.md)         | The five evaluation suites and the release gates                 |
-| INF  | [inference.md](inference.md)           | Quantization, memory fit, and CPU inference on OpenBSD           |
-| MDL  | [model.md](model.md)                   | Base model selection, escalation rule, and fallbacks             |
-| VAR  | [variants.md](variants.md)             | User personas and the promotion rule for variants                |
-| REP  | [repository.md](repository.md)         | Monorepo layout, tools, task runner, and CI                      |
-| AGT  | [agents.md](agents.md)                 | Development agents, credentials, and human decision points       |
-| LIC  | [licensing.md](licensing.md)           | Licenses, dataset cards, model cards, and release integrity      |
-| RSK  | [risks.md](risks.md)                   | Risks and their mitigations                                      |
+| Code | Document                                             | Area                                                                   |
+| ---- | ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| HRN  | [harness.md](harness.md)                             | The Perl harness on OpenBSD: language, architecture, and processes     |
+| HRN  | [harness-repl.md](harness-repl.md)                   | The operator REPL and the confirmation protocol                        |
+| HRN  | [harness-tools.md](harness-tools.md)                 | The tools, tool-call handling, and tool output truncation              |
+| HRN  | [harness-loop.md](harness-loop.md)                   | The agent loop, the prompt, the failure budgets, and the transcript    |
+| HRN  | [harness-safety.md](harness-safety.md)               | The safety design, the model fetch, and the package                    |
+| IAC  | [infrastructure.md](infrastructure.md)               | Scaleway resources as OpenTofu code: hosts, durability, and guardrails |
+| IAC  | [infrastructure-stacks.md](infrastructure-stacks.md) | The four OpenTofu stacks                                               |
+| COR  | [corpus.md](corpus.md)                               | Data sources, license lanes, augmentation, and the data pipeline       |
+| TRN  | [training.md](training.md)                           | CPT, SFT, trace generation, and the compute budget                     |
+| EVL  | [evaluation.md](evaluation.md)                       | The five evaluation suites and the release gates                       |
+| INF  | [inference.md](inference.md)                         | Quantization, memory fit, and CPU inference on OpenBSD                 |
+| MDL  | [model.md](model.md)                                 | Base model selection, escalation rule, and fallbacks                   |
+| VAR  | [variants.md](variants.md)                           | User personas and the promotion rule for variants                      |
+| REP  | [repository.md](repository.md)                       | Monorepo layout, tools, task runner, and CI                            |
+| AGT  | [agents.md](agents.md)                               | Development agents, credentials, and human decision points             |
+| LIC  | [licensing.md](licensing.md)                         | Licenses, dataset cards, model cards, and release integrity            |
+| RSK  | [risks.md](risks.md)                                 | Risks and their mitigations                                            |
 
 ## Governance documents
 
